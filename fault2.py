@@ -191,6 +191,13 @@ for i, count in enumerate(particle_count_by_layer):
 print(f"Total particles generated: {total_particles}")
 print("-" * 70)
 
+# Calculate timestep AFTER particles with soft materials are added
+# With reduced stiffness (0.001×), timestep needs to be computed from actual material properties
+O.dt = 0.1 * PWaveTimeStep()  # Use 0.1× (not 0.2×) for extra stability with soft materials
+print(f"\nInitial timestep (soft materials): {O.dt:.6e} s")
+print("(Will be recomputed after stiffness restoration)")
+print("-" * 70)
+
 # ============================================================================
 # SECTION 5: BOUNDARY WALLS (Bottom Fixed for Thrust Mechanics)
 # ============================================================================
@@ -243,12 +250,12 @@ O.engines = [
     # Triaxial controller with light confining stress during Phase 0 settling
     TriaxialStressController(
         stressMask=3,                    # Control only X,Y axes during Phase 0 (let gravity settle Z naturally)
-        internalCompaction=True,         # ✅ Enable during Phase 0 for lateral confinement
-        goal1=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
-        goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
+        internalCompaction=False,        # ✅ DISABLED during Phase 0 - let gravity work naturally
+        goal1=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
+        goal2=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
         goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
         thickness=0.5,                   # Match wall thickness
-        # maxStrainRate=(0.1, 0.1, 0.1),   # Limit strain rate to prevent explosive deformation
+        maxStrainRate=(0.01, 0.01, 0.0), # Very slow wall movement to prevent explosion
         label="triax"
     ),
 
@@ -262,8 +269,8 @@ O.engines = [
     PyRunner(command='monitorBonds()', iterPeriod=1000)
 ]
 
-# Consistent small timestep for numerical stability throughout simulation
-O.dt = 0.2 * PWaveTimeStep()
+# Timestep will be calculated after materials are added to simulation
+# (See below after particle generation)
 
 # ============================================================================
 # SECTION 7: PHASE STATE VARIABLES
@@ -300,13 +307,13 @@ def checkGravityEquilibrium():
     if not phase0_complete:
         unbalanced = utils.unbalancedForce()
 
-        # Use relaxed equilibration criterion as requested:
+        # Use relaxed equilibration criterion:
         # - target unbalanced force < 0.01 (with reduced stiffness, should settle faster)
         # - kinetic energy < 500 (realistic for 4000 particles with soft materials)
-        # - minimum iterations before checking: 10000
-        # - forced timeout: 35000 iterations
-        min_iters = 10000
-        timeout_iters = 35000
+        # - minimum iterations before checking: 8000 (reduced from 10000)
+        # - forced timeout: 30000 iterations (reduced from 35000)
+        min_iters = 8000
+        timeout_iters = 30000
         target_unbalanced = 0.01  # Stricter with softer materials
         target_ke = 500.0  # Kinetic energy threshold (relaxed for large system)
 
@@ -420,7 +427,7 @@ def gradualStiffnessRestoration():
                 mat.young = original_youngs[idx] * target_fraction
             
             # Recompute timestep with new stiffness
-            O.dt = 0.2 * PWaveTimeStep()
+            O.dt = 0.1 * PWaveTimeStep()
             
             print(f"Phase 1: Stiffness Restoration Step {current_step + 1}/{num_steps} | "
                   f"Young's at {target_fraction*100:.0f}% | dt: {O.dt:.6e} s")
@@ -430,8 +437,8 @@ def gradualStiffnessRestoration():
         for idx, mat in enumerate(materials):
             mat.young = original_youngs[idx]
         
-        # Use consistent timestep with full stiffness for stability
-        O.dt = 0.2 * PWaveTimeStep()
+        # Use conservative timestep with full stiffness for stability
+        O.dt = 0.15 * PWaveTimeStep()
         
         # Use moderate damping for quasi-static loading (Change 3)
         for eng in O.engines:
@@ -442,7 +449,7 @@ def gradualStiffnessRestoration():
         print("PHASE 1 COMPLETE: Bonding + Stiffness Restoration")
         print("="*70)
         print(f"Young's modulus restored to target values (2.0-2.5 GPa)")
-        print(f"Timestep: {O.dt:.6e} s (consistent 0.2×PWave) | Damping: 0.3")
+        print(f"Timestep: {O.dt:.6e} s (0.15×PWave, conservative) | Damping: 0.3")
         
         # NOW apply HORIZONTAL COMPRESSION for thrust fault mechanics (Change 2)
         # - Bottom boundary fixed (rigid basement)
