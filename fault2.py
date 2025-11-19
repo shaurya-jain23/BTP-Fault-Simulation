@@ -173,13 +173,8 @@ print("-" * 70)
 # ============================================================================
 # SECTION 5: BOUNDARY WALLS
 # ============================================================================
-
-walls = aabbWalls(
-    [(domain[0], domain[2], domain[4]), (domain[1], domain[3], domain[5])],
-    thickness=0.5,
-    material=materials[0]  # Use first sandstone layer material
-)
-wallIds = O.bodies.append(walls)
+# Note: Walls are automatically created by TriaxialStressController
+# Do NOT use aabbWalls - it conflicts with triax movable walls
 
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
@@ -217,7 +212,9 @@ O.engines = [
         goal1=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
         goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
         goal3=-lithostatic_stress,       # Vertical (Z)
-        thickness=0.5,                   # Match wall thickness
+        thickness=0.5,                   # Wall thickness
+        wall_frictionAngle=np.radians(30),  # Wall friction angle
+        max_vel=0.1,                     # Maximum wall velocity (m/s)
         label="triax"
     ),
 
