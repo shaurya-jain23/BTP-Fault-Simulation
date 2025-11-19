@@ -208,7 +208,7 @@ O.engines = [
     ),
 
     # Very high damping for equilibration and stiffness restoration
-    NewtonIntegrator(damping=0.9, gravity=(0, 0, -9.81)),
+    NewtonIntegrator(damping=0.95, gravity=(0, 0, -9.81)),
 
     # Triaxial controller with light confining stress during Phase 0 settling
     TriaxialStressController(
@@ -267,13 +267,13 @@ def checkGravityEquilibrium():
 
         # Use relaxed equilibration criterion as requested:
         # - target unbalanced force < 0.01 (with reduced stiffness, should settle faster)
-        # - kinetic energy < 50 (particles nearly at rest)
+        # - kinetic energy < 500 (realistic for 4000 particles with soft materials)
         # - minimum iterations before checking: 10000
-        # - forced timeout: 40000 iterations
+        # - forced timeout: 35000 iterations
         min_iters = 10000
-        timeout_iters = 40000
+        timeout_iters = 35000
         target_unbalanced = 0.01  # Stricter with softer materials
-        target_ke = 50.0  # Kinetic energy threshold
+        target_ke = 500.0  # Kinetic energy threshold (relaxed for large system)
 
         # Monitor kinetic energy for additional insight
         ke = utils.kineticEnergy()
@@ -319,7 +319,7 @@ def checkGravityEquilibrium():
 
         # Progress updates during settling
         if O.iter % 5000 == 0:
-            print(f"Phase 0 (Gravity): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} (target: {target_unbalanced:.4f}) | KE: {ke:.2e} (target: {target_ke:.0f})")
+            print(f"Phase 0 (Gravity): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} (target: {target_unbalanced:.4f}) | KE: {ke:.2e} (target: <{target_ke:.0f})")
 
 # Phase 1 removed: we proceed directly from gravity settling (Phase 0) to
 # fault loading (Phase 2). The consolidation routine was intentionally
