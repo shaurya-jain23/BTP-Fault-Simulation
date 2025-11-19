@@ -30,9 +30,9 @@ LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 # Realistic stratigraphy: Layers 0,2,4,6,8 = Sandstone | Layers 1,3,5,7,9 = Shale
 
 materials = []
-original_youngs = []  # Store original Young's modulus for restoration after settling
+original_youngs = []  # Store original Young's modulus for gradual restoration
 
-# Stiffness reduction factor for Phase 0 settling (restored after bonding)
+# Stiffness reduction factor for Phase 0 settling (will be gradually restored after bonding)
 SETTLING_STIFFNESS_FACTOR = 0.001  # Use 0.1% of target stiffness during settling
 
 for i in range(10):
@@ -84,7 +84,7 @@ print(f"Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 19.9-24.9 GPa)")
 print(f"Shale layers: 1, 3, 5, 7, 9 (Target Young's: 20.0-25.0 GPa)")
 print(f"Average density: {avg_density:.0f} kg/m³")
 print(f"\n⚠️  Phase 0 uses reduced stiffness (factor: {SETTLING_STIFFNESS_FACTOR})")
-print(f"   Stiffness will be restored to target values after bonding")
+print(f"   Stiffness will be GRADUALLY restored after bonding to avoid force explosion")
 print("-" * 70)
 
 # ============================================================================
@@ -207,22 +207,23 @@ O.engines = [
         )]
     ),
 
-    # Very high damping for faster equilibration during settling
+    # Very high damping for equilibration and stiffness restoration
     NewtonIntegrator(damping=0.9, gravity=(0, 0, -9.81)),
 
-    # Triaxial controller (DISABLED during Phase 0, activated after stiffness restoration)
+    # Triaxial controller with light confining stress during Phase 0 settling
     TriaxialStressController(
         stressMask=7,                    # Control all three axes
-        internalCompaction=False,        # ❌ DISABLED during Phase 0 settling
-        goal1=0,                         # Zero stress during Phase 0
-        goal2=0,                         # Zero stress during Phase 0
-        goal3=0,                         # Zero stress during Phase 0
+        internalCompaction=True,         # ✅ Enable during Phase 0 for lateral confinement
+        goal1=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
+        goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
+        goal3=-lithostatic_stress,       # Vertical (Z)
         thickness=0.5,                   # Match wall thickness
         label="triax"
     ),
 
     # Phase control callbacks (order matters!)
     PyRunner(command='checkGravityEquilibrium()', iterPeriod=100, label='gravityCheck'),
+    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=100, label='stiffnessRestore'),
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
 
     # Data collection
@@ -237,6 +238,9 @@ O.dt = 0.2 * PWaveTimeStep()  # Reduced timestep for stability
 # ============================================================================
 
 phase0_complete = False # Gravity deposition
+stiffness_restoration_active = False # Gradual stiffness restoration phase
+stiffness_restoration_start = 0
+stiffness_restoration_complete = False
 phase2_active = False # Fault loading
 simulation_stopped = False
 
@@ -302,35 +306,14 @@ def checkGravityEquilibrium():
                 total_bonds = bond_count
                 print(f"Created {bond_count} cohesive bonds")
                 
-                # CRITICAL: Restore original Young's modulus values
-                print(f"\nRestoring material stiffness to target values...")
-                for idx, mat in enumerate(materials):
-                    mat.young = original_youngs[idx]
-                print(f"✓ Material stiffness restored (Young's: 19.9-25.0 GPa)")
-                
-                # Recompute timestep with restored stiffness
-                O.dt = 0.5 * PWaveTimeStep()
-                print(f"✓ Timestep recomputed: {O.dt:.6e} s\n")
-                
-                # Reduce damping for dynamic fault loading
-                for eng in O.engines:
-                    if isinstance(eng, NewtonIntegrator):
-                        eng.damping = 0.4
-                        print(f"✓ Reduced damping to {eng.damping} for Phase 2 dynamics\n")
-
-                # NOW enable triax and apply stresses (after stiffness restoration)
-                triax.internalCompaction = True  # Enable triax control
-                # Set lateral goals to confining stress and axial to 1.5× lithostatic stress
-                triax.goal1 = -horizontal_stress  # Restore confining stress
-                triax.goal2 = -horizontal_stress  # Restore confining stress
-                triax.goal3 = -1.5 * lithostatic_stress
-                print(f"\n--- Starting Phase 2: Fault Loading (direct) ---")
-                print(f"Axial target: {1.5 * lithostatic_stress/1e6:.2f} MPa (1.5× lithostatic)")
-                print(f"Lateral targets: {horizontal_stress/1e6:.2f} MPa (confining stress)")
-                print("="*70 + "\n")
+                # Trigger gradual stiffness restoration (avoids force explosion)
+                global stiffness_restoration_active, stiffness_restoration_start
+                stiffness_restoration_active = True
+                stiffness_restoration_start = O.iter
+                print(f"\n✓ Starting GRADUAL stiffness restoration over next 5000 iterations")
+                print(f"   This prevents force explosion from instantaneous stiffness change\n")
 
                 phase0_complete = True
-                phase2_active = True
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
@@ -340,6 +323,84 @@ def checkGravityEquilibrium():
 # Phase 1 removed: we proceed directly from gravity settling (Phase 0) to
 # fault loading (Phase 2). The consolidation routine was intentionally
 # removed to simplify the workflow and avoid the overburden equilibration step.
+
+# ============================================================================
+# SECTION 9: GRADUAL STIFFNESS RESTORATION (Prevents Force Explosion)
+# ============================================================================
+
+def gradualStiffnessRestoration():
+    """
+    Gradually restore Young's modulus from reduced values to target values
+    over 5000 iterations to prevent force explosion.
+    
+    Uses 10 incremental steps of 10% increase each.
+    """
+    global stiffness_restoration_active, stiffness_restoration_complete, phase2_active
+    
+    if not stiffness_restoration_active or stiffness_restoration_complete:
+        return
+    
+    iters_since_start = O.iter - stiffness_restoration_start
+    restoration_duration = 5000  # Total iterations for restoration
+    num_steps = 10  # Number of discrete restoration steps
+    step_interval = restoration_duration // num_steps
+    
+    if iters_since_start < restoration_duration:
+        # Determine current step (0 to 9)
+        current_step = iters_since_start // step_interval
+        step_iter = current_step * step_interval
+        
+        # Only update at the beginning of each step
+        if iters_since_start == step_iter and iters_since_start > 0:
+            # Calculate target fraction (10%, 20%, 30%, ... 100%)
+            target_fraction = (current_step + 1) * 0.1
+            
+            # Update all material Young's modulus
+            for idx, mat in enumerate(materials):
+                mat.young = original_youngs[idx] * target_fraction
+            
+            # Recompute timestep with new stiffness
+            O.dt = 0.2 * PWaveTimeStep()
+            
+            print(f"Stiffness Restoration: Step {current_step + 1}/{num_steps} | "
+                  f"Young's at {target_fraction*100:.0f}% of target | "
+                  f"dt: {O.dt:.6e} s")
+    
+    elif iters_since_start >= restoration_duration:
+        # Final restoration to exact target values
+        for idx, mat in enumerate(materials):
+            mat.young = original_youngs[idx]
+        
+        O.dt = 0.5 * PWaveTimeStep()  # Standard timestep with full stiffness
+        
+        # Reduce damping for Phase 2 dynamics
+        for eng in O.engines:
+            if isinstance(eng, NewtonIntegrator):
+                eng.damping = 0.4
+        
+        print("\n" + "="*70)
+        print("STIFFNESS RESTORATION COMPLETE")
+        print("="*70)
+        print(f"Young's modulus restored to target values (19.9-25.0 GPa)")
+        print(f"Timestep: {O.dt:.6e} s | Damping: 0.4")
+        print("="*70 + "\n")
+        
+        stiffness_restoration_complete = True
+        stiffness_restoration_active = False
+        
+        # Now start Phase 2
+        triax.internalCompaction = False
+        triax.goal1 = -horizontal_stress
+        triax.goal2 = -horizontal_stress
+        triax.goal3 = -1.5 * lithostatic_stress
+        phase2_active = True
+        
+        print(f"--- Starting Phase 2: Fault Loading ---")
+        print(f"Axial target: {1.5 * lithostatic_stress/1e6:.2f} MPa (1.5× lithostatic)")
+        print(f"Lateral targets: {horizontal_stress/1e6:.2f} MPa (confining stress)")
+        print("="*70 + "\n")
+        
+        O.saveTmp('restoration_complete')
 
 # ============================================================================
 # SECTION 10: PHASE 2 - FAULT LOADING & FAILURE MONITORING
