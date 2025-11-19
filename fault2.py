@@ -1,4 +1,3 @@
-
 from yade import pack, plot, qt, utils
 import numpy as np
 
@@ -218,6 +217,7 @@ O.engines = [
         goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
         goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
         thickness=0.5,                   # Match wall thickness
+        maxStrainRate=(0.1, 0.1, 0.1),   # Limit strain rate to prevent explosive deformation
         label="triax"
     ),
 
@@ -319,8 +319,8 @@ def checkGravityEquilibrium():
                         # If interaction is in weak zone (x between -1 and 1)
                         if abs(mid_x) < 1.0:
                             # Reduce cohesion to 30% of original
-                            i.phys.normalCohesion *= 0.3
-                            i.phys.shearCohesion *= 0.3
+                            i.phys.normalAdhesion *= 0.3
+                            i.phys.shearAdhesion *= 0.3
                             weak_zone_count += 1
                 
                 print(f"✓ Created weak zone: {weak_zone_count} bonds weakened (30% strength)")
@@ -397,24 +397,26 @@ def gradualStiffnessRestoration():
         # Reduce damping for Phase 2 dynamics (low damping allows rupture propagation)
         for eng in O.engines:
             if isinstance(eng, NewtonIntegrator):
-                eng.damping = 0.2  # Lower damping for dynamic fault rupture
+                eng.damping = 0.3  # Moderate damping for controlled fault rupture
         
         print("\n" + "="*70)
         print("STIFFNESS RESTORATION COMPLETE")
         print("="*70)
         print(f"Young's modulus restored to target values (19.9-25.0 GPa)")
-        print(f"Timestep: {O.dt:.6e} s | Damping: 0.2 (allows dynamic rupture)")
+        print(f"Timestep: {O.dt:.6e} s | Damping: 0.3 (controlled rupture)")
         
         # NOW enable full triaxial control and apply ASYMMETRIC stress for shear
         triax.stressMask = 7  # Enable all three axes
-        triax.goal1 = -horizontal_stress * 0.8  # Lower stress on X-axis (creates differential)
+        triax.goal1 = -horizontal_stress * 0.85  # Slightly lower stress on X-axis
         triax.goal2 = -horizontal_stress  # Normal confining stress on Y
-        triax.goal3 = -2.0 * lithostatic_stress  # Higher vertical stress for shear failure
+        triax.goal3 = -1.3 * lithostatic_stress  # Moderate vertical stress (was 2.0×, too aggressive)
         triax.internalCompaction = False  # Disable compaction for loading phase
+        triax.maxStrainRate = (0.05, 0.05, 0.05)  # Slow strain rate for controlled fault development
         
-        print(f"\n--- Starting Phase 2: Fault Loading (Shear Mode) ---")
-        print(f"Axial target: {2.0 * lithostatic_stress/1e6:.2f} MPa (2.0× lithostatic)")
-        print(f"Lateral X: {horizontal_stress*0.8/1e6:.2f} MPa | Lateral Y: {horizontal_stress/1e6:.2f} MPa")
+        print(f"\n--- Starting Phase 2: Fault Loading (Controlled Shear) ---")
+        print(f"Axial target: {1.3 * lithostatic_stress/1e6:.2f} MPa (1.3× lithostatic)")
+        print(f"Lateral X: {horizontal_stress*0.85/1e6:.2f} MPa | Lateral Y: {horizontal_stress/1e6:.2f} MPa")
+        print(f"Strain rate limit: 0.05 s⁻¹ (controlled loading)")
         print(f"→ Differential stress promotes shear along weak zone at x=0")
         print("="*70 + "\n")
         
