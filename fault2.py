@@ -217,7 +217,7 @@ O.engines = [
         goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
         goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
         thickness=0.5,                   # Match wall thickness
-        maxStrainRate=(0.1, 0.1, 0.1),   # Limit strain rate to prevent explosive deformation
+        # maxStrainRate=(0.1, 0.1, 0.1),   # Limit strain rate to prevent explosive deformation
         label="triax"
     ),
 
