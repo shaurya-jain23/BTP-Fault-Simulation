@@ -2,16 +2,36 @@ from yade import pack, plot, qt, utils
 import numpy as np
 
 # ============================================================================
+# THRUST FAULT SIMULATION - 10-LAYER STRATIGRAPHY
+# ============================================================================
+# Simulates thrust/reverse fault development in layered rock under compression
+#
+# SIMULATION APPROACH:
+# - Phase 0: Gravity settling of particles (reduced stiffness for stability)
+# - Phase 1: Bond formation + weak zone creation + gradual stiffness restoration
+# - Phase 2: Horizontal tectonic compression (thrust mechanics)
+#
+# KEY FEATURES:
+# 1. Realistic material properties (2 GPa Young's, depth-consistent stresses)
+# 2. Fixed bottom boundary (rigid basement) for thrust mechanics
+# 3. Horizontal compression loading (not vertical) - proper thrust simulation
+# 4. Fault nucleation zone at x=0 (reduced cohesion + friction)
+# 5. Crack healing enabled (setCohesionOnNewContacts=True after Phase 0)
+# 6. Consistent timestep (0.2×PWaveTimeStep) for numerical stability
+# 7. Moderate damping (0.3) for quasi-static deformation
+# ============================================================================
+
+# ============================================================================
 # SECTION 1: SIMULATION PARAMETERS (10-Layer Stratigraphy)
 # ============================================================================
 
-# Burial depth for stress calculation
-BURIAL_DEPTH = 150 # meters (shallow crustal fault)
+# Burial depth for stress calculation - MATCHES MODEL HEIGHT
+BURIAL_DEPTH = 10  # meters (model represents 10m of rock column)
 
 # Domain geometry (in meters)
 DOMAIN_X = (-10, 10) # 20m width
 DOMAIN_Y = (-10, 10) # 20m length
-DOMAIN_Z = (0, 10) # 10m height (10 layers × 1m each) - POSITIVE Z for proper settling
+DOMAIN_Z = (0, 10) # 10m height (10 layers × 1m each)
 domain = (DOMAIN_X[0], DOMAIN_X[1], DOMAIN_Y[0], DOMAIN_Y[1], DOMAIN_Z[0], DOMAIN_Z[1])
 
 # Particle size - uniform smaller particles for better packing
@@ -40,7 +60,8 @@ for i in range(10):
         # Depth increases with layer number: adjust properties accordingly
         depth_factor = 1.0 + (i * 0.05)  # Slight increase with depth
         
-        target_young = 19.9e9 * depth_factor  # Store target value
+        # Reduced by 10× for visible deformation (2 GPa instead of 20 GPa)
+        target_young = 2.0e9 * depth_factor  # Store target value
         original_youngs.append(target_young)
         
         mat = CohFrictMat(
@@ -57,7 +78,8 @@ for i in range(10):
         # SHALE layers (odd indices: 1, 3, 5, 7, 9)
         depth_factor = 1.0 + (i * 0.05)
         
-        target_young = 20e9 * depth_factor  # Store target value
+        # Reduced by 10× for visible deformation (2 GPa instead of 20 GPa)
+        target_young = 2.0e9 * depth_factor  # Store target value
         original_youngs.append(target_young)
         
         mat = CohFrictMat(
@@ -79,8 +101,8 @@ avg_density = sum(mat.density for mat in materials) / len(materials)
 
 print("\n--- Material Properties Summary ---")
 print(f"Total layers: {len(materials)}")
-print(f"Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 19.9-24.9 GPa)")
-print(f"Shale layers: 1, 3, 5, 7, 9 (Target Young's: 20.0-25.0 GPa)")
+print(f"Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 2.0-2.5 GPa)")
+print(f"Shale layers: 1, 3, 5, 7, 9 (Target Young's: 2.0-2.5 GPa)")
 print(f"Average density: {avg_density:.0f} kg/m³")
 print(f"\n⚠️  Phase 0 uses reduced stiffness (factor: {SETTLING_STIFFNESS_FACTOR})")
 print(f"   Stiffness will be GRADUALLY restored after bonding to avoid force explosion")
@@ -170,7 +192,7 @@ print(f"Total particles generated: {total_particles}")
 print("-" * 70)
 
 # ============================================================================
-# SECTION 5: BOUNDARY WALLS
+# SECTION 5: BOUNDARY WALLS (Bottom Fixed for Thrust Mechanics)
 # ============================================================================
 
 walls = aabbWalls(
@@ -179,6 +201,14 @@ walls = aabbWalls(
     material=materials[0]  # Use first sandstone layer material
 )
 wallIds = O.bodies.append(walls)
+
+# Fix bottom wall to simulate rigid basement (thrust mechanics)
+# Bottom wall is at z=0 (index depends on wall creation order)
+for wallId in wallIds:
+    wall = O.bodies[wallId]
+    if wall.state.pos[2] <= domain[4] + 0.6:  # Bottom wall at z=0
+        wall.state.blockedDOFs = 'xyzXYZ'  # Completely fixed
+        print(f"Fixed bottom wall (ID: {wallId}) - simulates rigid basement")
 
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
@@ -192,10 +222,11 @@ O.engines = [
     InteractionLoop(
         [Ig2_Sphere_Sphere_ScGeom6D(), Ig2_Box_Sphere_ScGeom6D()],
 
-        # CRITICAL: Do NOT bond immediately - allow gravity settling first
+        # Bonding control: Initially disabled during Phase 0 settling
+        # Will be enabled in Phase 1 to allow new contacts to bond (crack healing)
         [Ip2_CohFrictMat_CohFrictMat_CohFrictPhys(
             setCohesionNow=False,           # ✅ Wait for Phase 0 completion
-            setCohesionOnNewContacts=False, # ✅ Manual bonding control
+            setCohesionOnNewContacts=False, # ✅ Will be enabled in Phase 1
             label='interactionPhys'
         )],
 
@@ -231,17 +262,21 @@ O.engines = [
     PyRunner(command='monitorBonds()', iterPeriod=1000)
 ]
 
-O.dt = 0.2 * PWaveTimeStep()  # Reduced timestep for stability
+# Consistent small timestep for numerical stability throughout simulation
+O.dt = 0.2 * PWaveTimeStep()
 
 # ============================================================================
 # SECTION 7: PHASE STATE VARIABLES
 # ============================================================================
+# Phase 0: Particle deposition by gravity settling
+# Phase 1: Bond formation + weak zone creation + stiffness restoration
+# Phase 2: Apply tectonic loading (compression for thrust/reverse faulting)
 
-phase0_complete = False # Gravity deposition
-stiffness_restoration_active = False # Gradual stiffness restoration phase
-stiffness_restoration_start = 0
-stiffness_restoration_complete = False
-phase2_active = False # Fault loading
+phase0_complete = False  # Gravity deposition complete
+phase1_active = False    # Bond formation and stiffness restoration
+phase1_start = 0         # Iteration when Phase 1 starts
+phase1_complete = False  # Stiffness restoration complete
+phase2_active = False    # Tectonic loading active
 simulation_stopped = False
 
 brokenBonds = 0
@@ -282,7 +317,7 @@ def checkGravityEquilibrium():
         if O.iter > min_iters:
             if (unbalanced < target_unbalanced and ke < target_ke) or O.iter >= timeout_iters:
                 print("\n" + "="*70)
-                print("PHASE 0 COMPLETE: GRAVITY EQUILIBRATION")
+                print("PHASE 0 COMPLETE: Gravity Settling")
                 print("="*70)
                 print(f"Iteration: {O.iter}")
                 print(f"Unbalanced force: {unbalanced:.6f}")
@@ -290,10 +325,8 @@ def checkGravityEquilibrium():
                 if O.iter >= timeout_iters:
                     print("(Forced completion due to timeout)")
 
-                # Calculate gravitational stress on bottom wall
-                # (This is particle self-weight stress, not yet overburden)
                 print(f"\nParticles have settled under gravity.")
-                print(f"Proceeding to bond creation...")
+                print(f"\n--- Starting PHASE 1: Bond Creation + Weak Zone ---")
 
                 # NOW create cohesive bonds between settled particles
                 bond_count = 0
@@ -304,10 +337,15 @@ def checkGravityEquilibrium():
                         bond_count += 1
 
                 total_bonds = bond_count
-                print(f"Created {bond_count} cohesive bonds")
+                print(f"✓ Created {bond_count} cohesive bonds")
                 
-                # Create a weak zone to seed fault nucleation
-                # Reduce cohesion in a vertical plane at x=0 (±1m width)
+                # Enable bonding for new contacts (allows crack healing during loading)
+                interactionPhys.setCohesionOnNewContacts = True
+                print(f"✓ Enabled bonding for new contacts (crack healing allowed)")
+                
+                # Create a FAULT NUCLEATION ZONE to seed rupture
+                # This is a vertical weak plane at x=0 (±1m width)
+                # Reduces cohesion AND friction to simulate pre-existing fault damage
                 weak_zone_count = 0
                 for i in O.interactions:
                     if isinstance(i.phys, CohFrictPhys):
@@ -316,52 +354,53 @@ def checkGravityEquilibrium():
                         pos2 = O.bodies[i.id2].state.pos
                         mid_x = (pos1[0] + pos2[0]) / 2.0
                         
-                        # If interaction is in weak zone (x between -1 and 1)
+                        # If interaction is in fault nucleation zone (x between -1 and 1)
                         if abs(mid_x) < 1.0:
-                            # Reduce cohesion to 30% of original
+                            # Reduce cohesion to 30% (weaker bonds)
                             i.phys.normalAdhesion *= 0.3
                             i.phys.shearAdhesion *= 0.3
+                            # Reduce friction angle to simulate fault gouge/damage
+                            i.phys.tangensOfFrictionAngle *= 0.7  # ~30% friction reduction
                             weak_zone_count += 1
                 
-                print(f"✓ Created weak zone: {weak_zone_count} bonds weakened (30% strength)")
-                print(f"  Weak zone location: vertical plane at x=0 (±1m width)\n")
+                print(f"✓ Created FAULT NUCLEATION ZONE: {weak_zone_count} bonds modified")
+                print(f"  Location: Vertical plane at x=0 (±1m width)")
+                print(f"  Properties: 30% cohesion, 30% friction reduction")
+                print(f"  Purpose: Seed localized shear rupture\n")
                 
-                # Trigger gradual stiffness restoration (avoids force explosion)
-                global stiffness_restoration_active, stiffness_restoration_start, phase2_active
-                stiffness_restoration_active = True
-                stiffness_restoration_start = O.iter
-                print(f"\n✓ Starting GRADUAL stiffness restoration over next 5000 iterations")
-                print(f"   This prevents force explosion from instantaneous stiffness change")
-                print(f"   Phase 2 will begin after stiffness restoration completes\n")
+                # Begin gradual stiffness restoration (avoids force explosion)
+                global phase1_active, phase1_start, phase2_active
+                phase1_active = True
+                phase1_start = O.iter
+                print(f"\n✓ Starting gradual stiffness restoration (5000 iterations)")
+                print(f"  This prevents force explosion from instantaneous stiffness change")
 
                 phase0_complete = True
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
         if O.iter % 5000 == 0:
-            print(f"Phase 0 (Gravity): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} (target: {target_unbalanced:.4f}) | KE: {ke:.2e} (target: <{target_ke:.0f})")
-
-# Phase 1 removed: we proceed directly from gravity settling (Phase 0) to
-# fault loading (Phase 2). The consolidation routine was intentionally
-# removed to simplify the workflow and avoid the overburden equilibration step.
+            print(f"Phase 0 (Settling): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} | KE: {ke:.2e} (targets: {target_unbalanced:.4f}, <{target_ke:.0f})")
 
 # ============================================================================
-# SECTION 9: GRADUAL STIFFNESS RESTORATION (Prevents Force Explosion)
+# SECTION 9: PHASE 1 - BOND FORMATION + STIFFNESS RESTORATION
 # ============================================================================
+# This phase gradually restores material stiffness after bonding to prevent
+# force explosion. It's an essential transition between settling and loading.
 
 def gradualStiffnessRestoration():
     """
-    Gradually restore Young's modulus from reduced values to target values
-    over 5000 iterations to prevent force explosion.
+    Phase 1 (Part 2): Gradually restore Young's modulus from reduced values 
+    to target values over 5000 iterations to prevent force explosion.
     
     Uses 10 incremental steps of 10% increase each.
     """
-    global stiffness_restoration_active, stiffness_restoration_complete, phase2_active
+    global phase1_active, phase1_complete, phase2_active
     
-    if not stiffness_restoration_active or stiffness_restoration_complete:
+    if not phase1_active or phase1_complete:
         return
     
-    iters_since_start = O.iter - stiffness_restoration_start
+    iters_since_start = O.iter - phase1_start
     restoration_duration = 5000  # Total iterations for restoration
     num_steps = 10  # Number of discrete restoration steps
     step_interval = restoration_duration // num_steps
@@ -383,61 +422,69 @@ def gradualStiffnessRestoration():
             # Recompute timestep with new stiffness
             O.dt = 0.2 * PWaveTimeStep()
             
-            print(f"Stiffness Restoration: Step {current_step + 1}/{num_steps} | "
-                  f"Young's at {target_fraction*100:.0f}% of target | "
-                  f"dt: {O.dt:.6e} s")
+            print(f"Phase 1: Stiffness Restoration Step {current_step + 1}/{num_steps} | "
+                  f"Young's at {target_fraction*100:.0f}% | dt: {O.dt:.6e} s")
     
     elif iters_since_start >= restoration_duration:
         # Final restoration to exact target values
         for idx, mat in enumerate(materials):
             mat.young = original_youngs[idx]
         
-        O.dt = 0.5 * PWaveTimeStep()  # Standard timestep with full stiffness
+        # Use consistent timestep with full stiffness for stability
+        O.dt = 0.2 * PWaveTimeStep()
         
-        # Reduce damping for Phase 2 dynamics (low damping allows rupture propagation)
+        # Use moderate damping for quasi-static loading (Change 3)
         for eng in O.engines:
             if isinstance(eng, NewtonIntegrator):
-                eng.damping = 0.3  # Moderate damping for controlled fault rupture
+                eng.damping = 0.3  # Moderate damping for quasi-static compression
         
         print("\n" + "="*70)
-        print("STIFFNESS RESTORATION COMPLETE")
+        print("PHASE 1 COMPLETE: Bonding + Stiffness Restoration")
         print("="*70)
-        print(f"Young's modulus restored to target values (19.9-25.0 GPa)")
-        print(f"Timestep: {O.dt:.6e} s | Damping: 0.3 (controlled rupture)")
+        print(f"Young's modulus restored to target values (2.0-2.5 GPa)")
+        print(f"Timestep: {O.dt:.6e} s (consistent 0.2×PWave) | Damping: 0.3")
         
-        # NOW enable full triaxial control and apply ASYMMETRIC stress for shear
-        triax.stressMask = 7  # Enable all three axes
-        triax.goal1 = -horizontal_stress * 0.85  # Slightly lower stress on X-axis
-        triax.goal2 = -horizontal_stress  # Normal confining stress on Y
-        triax.goal3 = -1.3 * lithostatic_stress  # Moderate vertical stress (was 2.0×, too aggressive)
-        triax.internalCompaction = False  # Disable compaction for loading phase
-        triax.maxStrainRate = (0.05, 0.05, 0.05)  # Slow strain rate for controlled fault development
+        # NOW apply HORIZONTAL COMPRESSION for thrust fault mechanics (Change 2)
+        # - Bottom boundary fixed (rigid basement)
+        # - Horizontal compression from lateral walls moving inward
+        # - Gravity maintained for overburden effect
+        # - NO vertical stress control (let gravity handle it)
         
-        print(f"\n--- Starting Phase 2: Fault Loading (Controlled Shear) ---")
-        print(f"Axial target: {1.3 * lithostatic_stress/1e6:.2f} MPa (1.3× lithostatic)")
-        print(f"Lateral X: {horizontal_stress*0.85/1e6:.2f} MPa | Lateral Y: {horizontal_stress/1e6:.2f} MPa")
-        print(f"Strain rate limit: 0.05 s⁻¹ (controlled loading)")
-        print(f"→ Differential stress promotes shear along weak zone at x=0")
+        triax.stressMask = 3  # Control only X,Y axes (horizontal compression)
+        triax.goal1 = -horizontal_stress * 1.5  # Compress from X direction
+        triax.goal2 = -horizontal_stress * 1.5  # Compress from Y direction  
+        triax.goal3 = 0  # NO vertical control - gravity provides overburden
+        triax.internalCompaction = False  # Disable compaction
+        triax.maxStrainRate = (0.02, 0.02, 0.0)  # Slow horizontal compression, no vertical
+        
+        print(f"\n--- Starting PHASE 2: Tectonic Compression (Thrust Mechanics) ---")
+        print(f"Loading mode: HORIZONTAL COMPRESSION (thrust fault simulation)")
+        print(f"  - Bottom boundary: FIXED (rigid basement)")
+        print(f"  - Horizontal stress: {horizontal_stress*1.5/1e6:.2f} MPa (1.5× confining)")
+        print(f"  - Vertical loading: Gravity only (overburden effect)")
+        print(f"  - Compression rate: 0.02 s⁻¹ (slow, quasi-static)")
+        print(f"  - Fault nucleation zone: Vertical plane at x=0")
+        print(f"→ Horizontal compression will drive thrust rupture along weak zone")
         print("="*70 + "\n")
         
         phase2_active = True
-        stiffness_restoration_complete = True
-        stiffness_restoration_active = False
+        phase1_complete = True
+        phase1_active = False
         
-        O.saveTmp('restoration_complete')
+        O.saveTmp('phase1_complete')
 
 # ============================================================================
-# SECTION 10: PHASE 2 - FAULT LOADING & FAILURE MONITORING
+# SECTION 10: PHASE 2 - TECTONIC LOADING & FAULT RUPTURE MONITORING
 # ============================================================================
 
 def checkFaultLoading():
     """
-    Phase 2: Monitor fault development and failure.
+    Phase 2: Monitor tectonic loading and fault rupture development.
 
     Termination criteria:
     1. Axial strain exceeds 15% (large deformation)
-    2. Significant bond breakage (>30% of total bonds)
-    3. Stress-strain curve shows post-peak behavior
+    2. Significant bond breakage (>30% of total bonds indicating fault formation)
+    3. Stress drop indicating rupture completion
     """
     global simulation_stopped, brokenBonds
 
