@@ -306,6 +306,26 @@ def checkGravityEquilibrium():
                 total_bonds = bond_count
                 print(f"Created {bond_count} cohesive bonds")
                 
+                # Create a weak zone to seed fault nucleation
+                # Reduce cohesion in a vertical plane at x=0 (±1m width)
+                weak_zone_count = 0
+                for i in O.interactions:
+                    if isinstance(i.phys, CohFrictPhys):
+                        # Get interaction midpoint
+                        pos1 = O.bodies[i.id1].state.pos
+                        pos2 = O.bodies[i.id2].state.pos
+                        mid_x = (pos1[0] + pos2[0]) / 2.0
+                        
+                        # If interaction is in weak zone (x between -1 and 1)
+                        if abs(mid_x) < 1.0:
+                            # Reduce cohesion to 30% of original
+                            i.phys.normalCohesion *= 0.3
+                            i.phys.shearCohesion *= 0.3
+                            weak_zone_count += 1
+                
+                print(f"✓ Created weak zone: {weak_zone_count} bonds weakened (30% strength)")
+                print(f"  Weak zone location: vertical plane at x=0 (±1m width)\n")
+                
                 # Trigger gradual stiffness restoration (avoids force explosion)
                 global stiffness_restoration_active, stiffness_restoration_start, phase2_active
                 stiffness_restoration_active = True
@@ -374,27 +394,28 @@ def gradualStiffnessRestoration():
         
         O.dt = 0.5 * PWaveTimeStep()  # Standard timestep with full stiffness
         
-        # Reduce damping for Phase 2 dynamics
+        # Reduce damping for Phase 2 dynamics (low damping allows rupture propagation)
         for eng in O.engines:
             if isinstance(eng, NewtonIntegrator):
-                eng.damping = 0.4
+                eng.damping = 0.2  # Lower damping for dynamic fault rupture
         
         print("\n" + "="*70)
         print("STIFFNESS RESTORATION COMPLETE")
         print("="*70)
         print(f"Young's modulus restored to target values (19.9-25.0 GPa)")
-        print(f"Timestep: {O.dt:.6e} s | Damping: 0.4")
+        print(f"Timestep: {O.dt:.6e} s | Damping: 0.2 (allows dynamic rupture)")
         
-        # NOW enable full triaxial control and apply vertical stress for Phase 2
+        # NOW enable full triaxial control and apply ASYMMETRIC stress for shear
         triax.stressMask = 7  # Enable all three axes
-        triax.goal1 = -horizontal_stress  # Restore confining stress
-        triax.goal2 = -horizontal_stress  # Restore confining stress
-        triax.goal3 = -1.5 * lithostatic_stress  # Apply fault loading stress
+        triax.goal1 = -horizontal_stress * 0.8  # Lower stress on X-axis (creates differential)
+        triax.goal2 = -horizontal_stress  # Normal confining stress on Y
+        triax.goal3 = -2.0 * lithostatic_stress  # Higher vertical stress for shear failure
         triax.internalCompaction = False  # Disable compaction for loading phase
         
-        print(f"\n--- Starting Phase 2: Fault Loading ---")
-        print(f"Axial target: {1.5 * lithostatic_stress/1e6:.2f} MPa (1.5× lithostatic)")
-        print(f"Lateral targets: {horizontal_stress/1e6:.2f} MPa (confining stress)")
+        print(f"\n--- Starting Phase 2: Fault Loading (Shear Mode) ---")
+        print(f"Axial target: {2.0 * lithostatic_stress/1e6:.2f} MPa (2.0× lithostatic)")
+        print(f"Lateral X: {horizontal_stress*0.8/1e6:.2f} MPa | Lateral Y: {horizontal_stress/1e6:.2f} MPa")
+        print(f"→ Differential stress promotes shear along weak zone at x=0")
         print("="*70 + "\n")
         
         phase2_active = True
