@@ -212,11 +212,11 @@ O.engines = [
 
     # Triaxial controller with light confining stress during Phase 0 settling
     TriaxialStressController(
-        stressMask=7,                    # Control all three axes
+        stressMask=3,                    # Control only X,Y axes during Phase 0 (let gravity settle Z naturally)
         internalCompaction=True,         # ✅ Enable during Phase 0 for lateral confinement
         goal1=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
         goal2=-0.05e6,                   # Light lateral confining (0.05 MPa) during settling
-        goal3=-lithostatic_stress,       # Vertical (Z)
+        goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
         thickness=0.5,                   # Match wall thickness
         label="triax"
     ),
@@ -307,11 +307,12 @@ def checkGravityEquilibrium():
                 print(f"Created {bond_count} cohesive bonds")
                 
                 # Trigger gradual stiffness restoration (avoids force explosion)
-                global stiffness_restoration_active, stiffness_restoration_start
+                global stiffness_restoration_active, stiffness_restoration_start, phase2_active
                 stiffness_restoration_active = True
                 stiffness_restoration_start = O.iter
                 print(f"\n✓ Starting GRADUAL stiffness restoration over next 5000 iterations")
-                print(f"   This prevents force explosion from instantaneous stiffness change\n")
+                print(f"   This prevents force explosion from instantaneous stiffness change")
+                print(f"   Phase 2 will begin after stiffness restoration completes\n")
 
                 phase0_complete = True
                 O.saveTmp('phase0_complete')
@@ -383,22 +384,22 @@ def gradualStiffnessRestoration():
         print("="*70)
         print(f"Young's modulus restored to target values (19.9-25.0 GPa)")
         print(f"Timestep: {O.dt:.6e} s | Damping: 0.4")
-        print("="*70 + "\n")
         
-        stiffness_restoration_complete = True
-        stiffness_restoration_active = False
+        # NOW enable full triaxial control and apply vertical stress for Phase 2
+        triax.stressMask = 7  # Enable all three axes
+        triax.goal1 = -horizontal_stress  # Restore confining stress
+        triax.goal2 = -horizontal_stress  # Restore confining stress
+        triax.goal3 = -1.5 * lithostatic_stress  # Apply fault loading stress
+        triax.internalCompaction = False  # Disable compaction for loading phase
         
-        # Now start Phase 2
-        triax.internalCompaction = False
-        triax.goal1 = -horizontal_stress
-        triax.goal2 = -horizontal_stress
-        triax.goal3 = -1.5 * lithostatic_stress
-        phase2_active = True
-        
-        print(f"--- Starting Phase 2: Fault Loading ---")
+        print(f"\n--- Starting Phase 2: Fault Loading ---")
         print(f"Axial target: {1.5 * lithostatic_stress/1e6:.2f} MPa (1.5× lithostatic)")
         print(f"Lateral targets: {horizontal_stress/1e6:.2f} MPa (confining stress)")
         print("="*70 + "\n")
+        
+        phase2_active = True
+        stiffness_restoration_complete = True
+        stiffness_restoration_active = False
         
         O.saveTmp('restoration_complete')
 
