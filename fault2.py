@@ -250,12 +250,12 @@ O.engines = [
     # Triaxial controller with light confining stress during Phase 0 settling
     TriaxialStressController(
         stressMask=3,                    # Control only X,Y axes during Phase 0 (let gravity settle Z naturally)
-        internalCompaction=False,        # ✅ DISABLED during Phase 0 - let gravity work naturally
+        internalCompaction=True,        # ✅ DISABLED during Phase 0 - let gravity work naturally
         goal1=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
         goal2=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
         goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
         thickness=0.5,                   # Match wall thickness
-        maxStrainRate=(0.01, 0.01, 0.0), # Very slow wall movement to prevent explosion
+       # maxStrainRate=(0.01, 0.01, 0.0), # Very slow wall movement to prevent explosion
         label="triax"
     ),
 
