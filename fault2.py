@@ -451,25 +451,29 @@ def gradualStiffnessRestoration():
         print(f"Young's modulus restored to target values (2.0-2.5 GPa)")
         print(f"Timestep: {O.dt:.6e} s (0.15×PWave, conservative) | Damping: 0.3")
         
+        # Reset strain reference dimensions so Phase 2 strain starts at 0
+        triax.width0 = triax.width
+        triax.height0 = triax.height
+        triax.depth0 = triax.depth
+        
         # NOW apply HORIZONTAL COMPRESSION for thrust fault mechanics (Change 2)
         # - Bottom boundary fixed (rigid basement)
         # - Horizontal compression from lateral walls moving inward
-        # - Gravity maintained for overburden effect
-        # - NO vertical stress control (let gravity handle it)
+        # - Vertical boundary (Top): Stress controlled at ~0 to allow UPLIFT (free surface)
         
-        triax.stressMask = 3  # Control only X,Y axes (horizontal compression)
+        triax.stressMask = 7  # Control ALL axes (X,Y compression, Z uplift)
         triax.goal1 = -horizontal_stress * 1.5  # Compress from X direction
         triax.goal2 = -horizontal_stress * 1.5  # Compress from Y direction  
-        triax.goal3 = 0  # NO vertical control - gravity provides overburden
+        triax.goal3 = -0.01e6  # Vertical target ~0 (atmospheric/free surface) to allow uplift
         triax.internalCompaction = False  # Disable compaction
-        triax.maxStrainRate = (0.02, 0.02, 0.0)  # Slow horizontal compression, no vertical
+        triax.maxStrainRate = (0.02, 0.02, 0.1)  # Allow faster vertical uplift (Z=0.1)
         
         print(f"\n--- Starting PHASE 2: Tectonic Compression (Thrust Mechanics) ---")
         print(f"Loading mode: HORIZONTAL COMPRESSION (thrust fault simulation)")
         print(f"  - Bottom boundary: FIXED (rigid basement)")
         print(f"  - Horizontal stress: {horizontal_stress*1.5/1e6:.2f} MPa (1.5× confining)")
-        print(f"  - Vertical loading: Gravity only (overburden effect)")
-        print(f"  - Compression rate: 0.02 s⁻¹ (slow, quasi-static)")
+        print(f"  - Vertical boundary: Free surface (allows uplift)")
+        print(f"  - Compression rate: 0.02 s⁻¹")
         print(f"  - Fault nucleation zone: Vertical plane at x=0")
         print(f"→ Horizontal compression will drive thrust rupture along weak zone")
         print("="*70 + "\n")
@@ -510,12 +514,13 @@ def checkFaultLoading():
             brokenBonds = broken_now
             bond_damage_ratio = broken_now / total_bonds if total_bonds > 0 else 0
 
-            # Termination check 1: Excessive axial strain
-            if abs(strain_z) > 0.15:
+            # Termination check 1: Excessive horizontal shortening (15%)
+            if abs(strain_x) > 0.15:
                 print("\n" + "="*70)
-                print("SIMULATION COMPLETE: Target Axial Strain Reached")
+                print("SIMULATION COMPLETE: Target Horizontal Shortening Reached")
                 print("="*70)
-                print(f"Final axial strain: {strain_z:.4f} (15% limit)")
+                print(f"Final horizontal strain: {strain_x:.4f} (15% limit)")
+                print(f"Final vertical uplift strain: {strain_z:.4f}")
                 print(f"Final vertical stress: {-sigma_z/1e6:.2f} MPa")
                 print(f"Broken bonds: {broken_now} / {total_bonds} ({bond_damage_ratio*100:.1f}%)")
 
@@ -527,16 +532,18 @@ def checkFaultLoading():
                 print("SIMULATION COMPLETE: Significant Fault Damage")
                 print("="*70)
                 print(f"Bond damage: {bond_damage_ratio*100:.1f}% ({broken_now}/{total_bonds})")
-                print(f"Axial strain: {strain_z:.4f}")
+                print(f"Horizontal strain: {strain_x:.4f}")
                 print(f"Vertical stress: {-sigma_z/1e6:.2f} MPa")
 
                 stopSimulation()
 
             # Progress monitoring
             if O.iter % 2000 == 0:
+                sigma_x = triax.stress(0)[0]
                 print(f"Phase 2 (Fault Loading): Iteration {O.iter:6d} | "
-                      f"εz = {strain_z:.4f} | "
-                      f"σz = {-sigma_z/1e6:.2f} MPa | "
+                      f"εx = {strain_x:.4f} | "
+                      f"σx = {-sigma_x/1e6:.2f} MPa | "
+                      f"εz (uplift) = {strain_z:.4f} | "
                       f"Broken bonds = {broken_now} ({bond_damage_ratio*100:.1f}%)")
 
         except Exception as e:
