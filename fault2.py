@@ -408,29 +408,30 @@ def gradualStiffnessRestoration():
         return
     
     iters_since_start = O.iter - phase1_start
-    restoration_duration = 5000  # Total iterations for restoration
-    num_steps = 10  # Number of discrete restoration steps
+    restoration_duration = 10000  # Slower restoration (was 5000)
+    num_steps = 100  # More steps for smoother transition (was 10)
     step_interval = restoration_duration // num_steps
     
     if iters_since_start < restoration_duration:
-        # Determine current step (0 to 9)
+        # Determine current step
         current_step = iters_since_start // step_interval
         step_iter = current_step * step_interval
         
         # Only update at the beginning of each step
         if iters_since_start == step_iter and iters_since_start > 0:
-            # Calculate target fraction (10%, 20%, 30%, ... 100%)
-            target_fraction = (current_step + 1) * 0.1
+            # Calculate target fraction
+            target_fraction = (current_step + 1) / num_steps
             
             # Update all material Young's modulus
             for idx, mat in enumerate(materials):
                 mat.young = original_youngs[idx] * target_fraction
             
-            # Recompute timestep with new stiffness
-            O.dt = 0.1 * PWaveTimeStep()
+            # Recompute timestep with new stiffness - USE CONSERVATIVE VALUE
+            # Reduced to 0.05x to prevent explosions during hardening
+            O.dt = 0.05 * PWaveTimeStep()
             
             print(f"Phase 1: Stiffness Restoration Step {current_step + 1}/{num_steps} | "
-                  f"Young's at {target_fraction*100:.0f}% | dt: {O.dt:.6e} s")
+                  f"Young's at {target_fraction*100:.1f}% | dt: {O.dt:.6e} s")
     
     elif iters_since_start >= restoration_duration:
         # Final restoration to exact target values
@@ -458,22 +459,27 @@ def gradualStiffnessRestoration():
         
         # NOW apply HORIZONTAL COMPRESSION for thrust fault mechanics (Change 2)
         # - Bottom boundary fixed (rigid basement)
-        # - Horizontal compression from lateral walls moving inward
+        # - Horizontal compression from lateral walls moving inward (STRAIN RATE CONTROL)
         # - Vertical boundary (Top): Stress controlled at ~0 to allow UPLIFT (free surface)
         
-        triax.stressMask = 7  # Control ALL axes (X,Y compression, Z uplift)
-        triax.goal1 = -horizontal_stress * 1.5  # Compress from X direction
-        triax.goal2 = -horizontal_stress * 1.5  # Compress from Y direction  
+        # stressMask = 4 (binary 100) -> Z is stress controlled. X and Y are strain rate controlled.
+        triax.stressMask = 4  
+        
+        # For strain rate control, goal is the strain rate (negative = compression)
+        triax.goal1 = -0.01  # Compress X at 1%/s (slower for stability)
+        triax.goal2 = -0.01  # Compress Y at 1%/s
+        
+        # For stress control, goal is the stress (negative = compression)
         triax.goal3 = -0.01e6  # Vertical target ~0 (atmospheric/free surface) to allow uplift
+        
         triax.internalCompaction = False  # Disable compaction
-        triax.maxStrainRate = (0.02, 0.02, 0.1)  # Allow faster vertical uplift (Z=0.1)
+        triax.maxStrainRate = (0.01, 0.01, 0.1)  # Limit rates (Z can move faster for uplift)
         
         print(f"\n--- Starting PHASE 2: Tectonic Compression (Thrust Mechanics) ---")
-        print(f"Loading mode: HORIZONTAL COMPRESSION (thrust fault simulation)")
+        print(f"Loading mode: HORIZONTAL COMPRESSION (Strain Rate Control)")
         print(f"  - Bottom boundary: FIXED (rigid basement)")
-        print(f"  - Horizontal stress: {horizontal_stress*1.5/1e6:.2f} MPa (1.5× confining)")
+        print(f"  - Horizontal loading: Strain Rate = -0.01 s⁻¹ (Constant Velocity)")
         print(f"  - Vertical boundary: Free surface (allows uplift)")
-        print(f"  - Compression rate: 0.02 s⁻¹")
         print(f"  - Fault nucleation zone: Vertical plane at x=0")
         print(f"→ Horizontal compression will drive thrust rupture along weak zone")
         print("="*70 + "\n")
@@ -537,7 +543,7 @@ def checkFaultLoading():
 
                 stopSimulation()
 
-            # Progress monitoring
+        # Progress monitoring
             if O.iter % 2000 == 0:
                 sigma_x = triax.stress(0)[0]
                 print(f"Phase 2 (Fault Loading): Iteration {O.iter:6d} | "
