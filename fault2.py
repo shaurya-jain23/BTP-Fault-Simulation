@@ -35,10 +35,11 @@ DOMAIN_Z = (0, 10) # 10m height (10 layers × 1m each)
 domain = (DOMAIN_X[0], DOMAIN_X[1], DOMAIN_Y[0], DOMAIN_Y[1], DOMAIN_Z[0], DOMAIN_Z[1])
 
 # Particle size - uniform smaller particles for better packing
-PARTICLE_RADIUS = 0.25 # meters (uniform size for all layers)
+PARTICLE_RADIUS = 0.10 # meters (uniform size for all layers) - reduced for better resolution
 
-# Number of particles per 1m layer (adjust to fill domain properly)
-PARTICLES_PER_LAYER = 400 # Total: 4000 particles
+# Number of particles per 1m layer (scaled for smaller particle size)
+# With r=0.10m (vs original 0.25m), we need ~15× more particles for proper packing
+PARTICLES_PER_LAYER = 6000 # Total: 60,000 particles (increased from 400 for better resolution)
 
 # Layer boundaries (10 layers, each 1m thick) - POSITIVE Z upward
 LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -60,8 +61,8 @@ for i in range(10):
         # Depth increases with layer number: adjust properties accordingly
         depth_factor = 1.0 + (i * 0.05)  # Slight increase with depth
         
-        # Reduced by 10× for visible deformation (2 GPa instead of 20 GPa)
-        target_young = 2.0e9 * depth_factor  # Store target value
+        # Use reduced target stiffness for DEM stability (100 MPa instead of 2 GPa)
+        target_young = 1.0e8 * depth_factor  # Store target value (scaled down)
         original_youngs.append(target_young)
         
         mat = CohFrictMat(
@@ -78,8 +79,8 @@ for i in range(10):
         # SHALE layers (odd indices: 1, 3, 5, 7, 9)
         depth_factor = 1.0 + (i * 0.05)
         
-        # Reduced by 10× for visible deformation (2 GPa instead of 20 GPa)
-        target_young = 2.0e9 * depth_factor  # Store target value
+        # Use reduced target stiffness for DEM stability (100 MPa instead of 2 GPa)
+        target_young = 1.0e8 * depth_factor  # Store target value (scaled down)
         original_youngs.append(target_young)
         
         mat = CohFrictMat(
@@ -101,8 +102,8 @@ avg_density = sum(mat.density for mat in materials) / len(materials)
 
 print("\n--- Material Properties Summary ---")
 print(f"Total layers: {len(materials)}")
-print(f"Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 2.0-2.5 GPa)")
-print(f"Shale layers: 1, 3, 5, 7, 9 (Target Young's: 2.0-2.5 GPa)")
+print(f"Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 100-125 MPa)")
+print(f"Shale layers: 1, 3, 5, 7, 9 (Target Young's: 100-125 MPa)")
 print(f"Average density: {avg_density:.0f} kg/m³")
 print(f"\n⚠️  Phase 0 uses reduced stiffness (factor: {SETTLING_STIFFNESS_FACTOR})")
 print(f"   Stiffness will be GRADUALLY restored after bonding to avoid force explosion")
@@ -209,13 +210,37 @@ walls = aabbWalls(
 )
 wallIds = O.bodies.append(walls)
 
-# Fix bottom wall to simulate rigid basement (thrust mechanics)
-# Bottom wall is at z=0 (index depends on wall creation order)
-for wallId in wallIds:
+# Split bottom into two halves: left = fixed footwall, right = hanging wall (movable)
+left_walls = aabbWalls(
+    [(domain[0], domain[2], domain[4]), (0.0, domain[3], domain[4] + 0.5)],
+    thickness=0.5,
+    material=materials[0]
+)
+right_walls = aabbWalls(
+    [(0.0, domain[2], domain[4]), (domain[1], domain[3], domain[4] + 0.5)],
+    thickness=0.5,
+    material=materials[0]
+)
+
+left_ids = O.bodies.append(left_walls)
+right_ids = O.bodies.append(right_walls)
+
+# Fix the left (footwall) bottom face to simulate rigid basement
+for wallId in left_ids:
     wall = O.bodies[wallId]
-    if wall.state.pos[2] <= domain[4] + 0.6:  # Bottom wall at z=0
-        wall.state.blockedDOFs = 'xyzXYZ'  # Completely fixed
-        print(f"Fixed bottom wall (ID: {wallId}) - simulates rigid basement")
+    if wall.state.pos[2] <= domain[4] + 0.6:
+        wall.state.blockedDOFs = 'xyzXYZ'
+        print(f"Fixed footwall (ID: {wallId}) - simulates rigid basement")
+
+# Identify the hanging wall (right side bottom face) - keep it movable and record its id
+hanging_wall_id = None
+for wallId in right_ids:
+    wall = O.bodies[wallId]
+    if wall.state.pos[2] <= domain[4] + 0.6:
+        hanging_wall_id = wallId
+        # ensure it's free to move in X and Z (do not block these DOFs)
+        # leave blockedDOFs default so it can be translated by a driver
+        print(f"Hanging wall (movable) found (ID: {wallId}) - will be driven during Phase 2")
 
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
@@ -263,6 +288,8 @@ O.engines = [
     PyRunner(command='checkGravityEquilibrium()', iterPeriod=100, label='gravityCheck'),
     PyRunner(command='gradualStiffnessRestoration()', iterPeriod=100, label='stiffnessRestore'),
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
+    # Drive hanging wall every iteration when Phase 2 is active
+    PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
 
     # Data collection
     PyRunner(command='saveData()', iterPeriod=500),
@@ -288,6 +315,10 @@ simulation_stopped = False
 
 brokenBonds = 0
 total_bonds = 0
+# Hanging wall id for kinematic driver (set when walls are created)
+hanging_wall_id = None
+# Hanging wall velocity vector (set at Phase 2 start)
+hanging_wall_vel = (0.0, 0.0, 0.0)
 
 # ============================================================================
 # SECTION 8: PHASE 0 - GRAVITY DEPOSITION & EQUILIBRATION
@@ -483,7 +514,21 @@ def gradualStiffnessRestoration():
         phase2_active = True
         phase1_complete = True
         phase1_active = False
-        
+        # Disable triax controller for kinematic wall-driven loading
+        try:
+            triax.dead = True
+        except:
+            pass
+
+        # Configure hanging wall kinematics: dip and velocity magnitude
+        global hanging_wall_vel
+        dip_angle = np.radians(60)  # 60° thrust fault
+        vel_mag = 1e-4  # m/s - slow, quasi-static driving velocity
+        vel_x = vel_mag * np.cos(dip_angle)
+        vel_z = vel_mag * np.sin(dip_angle)
+        # Move hanging wall leftwards (-X) and upwards (+Z)
+        hanging_wall_vel = (-vel_x, 0.0, vel_z)
+
         O.saveTmp('phase1_complete')
 
 # ============================================================================
@@ -550,6 +595,17 @@ def checkFaultLoading():
 
         except Exception as e:
             pass  # Stress not available yet
+
+def driveHangingWall():
+    """Set hanging wall velocity every iteration during Phase 2."""
+    global hanging_wall_id, hanging_wall_vel
+    if phase2_active and not simulation_stopped and hanging_wall_id is not None:
+        try:
+            # Apply velocity directly to the hanging wall rigid body
+            b = O.bodies[hanging_wall_id]
+            b.state.vel = hanging_wall_vel
+        except Exception:
+            pass
 
 def stopSimulation():
     """Clean shutdown with data export"""
@@ -674,14 +730,15 @@ O.saveTmp('initial')
 print("\n" + "="*70)
 print("STARTING SIMULATION - 10-LAYER STRATIGRAPHIC MODEL")
 print("="*70)
-print(f"Total particles: {total_particles} (400 per layer × 10 layers)")
+print(f"Total particles: {total_particles} (6000 per layer × 10 layers)")
 print(f"Domain: {domain}")
 print(f"Burial depth: {BURIAL_DEPTH} m")
 print(f"Layer structure: 5 Sandstone + 5 Shale (alternating)")
+print(f"Particle radius: {PARTICLE_RADIUS} m (high resolution)")
 print(f"\nPHASE WORKFLOW:")
 print(f" Phase 0: Gravity deposition (target: unbalanced force < 0.01)")
-print(f" Phase 1: Overburden application (σv = {lithostatic_stress/1e6:.2f} MPa)")
-print(f" Phase 2: Fault loading (σv = {fault_loading_stress/1e6:.2f} MPa)")
+print(f" Phase 1: Bond formation + stiffness restoration (100 MPa target)")
+print(f" Phase 2: Kinematic hanging wall drive (thrust fault)")
 print("="*70 + "\n")
 
 print("Starting Phase 0: Gravity Deposition...")
