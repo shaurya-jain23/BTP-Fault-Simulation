@@ -1,0 +1,129 @@
+--- Material Properties Summary ---
+Total layers: 10
+Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 2.0-2.5 GPa)
+Shale layers: 1, 3, 5, 7, 9 (Target Young's: 2.0-2.5 GPa)
+Average density: 2500 kg/m³
+
+⚠️  Phase 0 uses reduced stiffness (factor: 0.001)
+   Stiffness will be GRADUALLY restored after bonding to avoid force explosion
+----------------------------------------------------------------------
+
+--- Calculated Stress State at 10m Depth ---
+Lithostatic vertical stress: 0.25 MPa
+K0 coefficient: 0.475
+Horizontal confining stress: 0.12 MPa
+Stress ratio (σh/σv): 0.475
+Fault loading stress (Phase 2): 0.44 MPa
+----------------------------------------------------------------------
+
+--- Generating 10-Layer Particle Packing ---
+Layer 0 (Sandstone): 400 particles | Z-range: [0.0, 1.0] m | r=0.25m
+Layer 1 (Shale): 400 particles | Z-range: [1.0, 2.0] m | r=0.25m
+Layer 2 (Sandstone): 400 particles | Z-range: [2.0, 3.0] m | r=0.25m
+Layer 3 (Shale): 400 particles | Z-range: [3.0, 4.0] m | r=0.25m
+Layer 4 (Sandstone): 400 particles | Z-range: [4.0, 5.0] m | r=0.25m
+Layer 5 (Shale): 400 particles | Z-range: [5.0, 6.0] m | r=0.25m
+Layer 6 (Sandstone): 400 particles | Z-range: [6.0, 7.0] m | r=0.25m
+Layer 7 (Shale): 400 particles | Z-range: [7.0, 8.0] m | r=0.25m
+Layer 8 (Sandstone): 400 particles | Z-range: [8.0, 9.0] m | r=0.25m
+Layer 9 (Shale): 400 particles | Z-range: [9.0, 10.0] m | r=0.25m
+
+--- Particle Distribution Summary ---
+Layer 0 (Sandstone): 400 particles
+Layer 1 (Shale): 400 particles
+Layer 2 (Sandstone): 400 particles
+Layer 3 (Shale): 400 particles
+Layer 4 (Sandstone): 400 particles
+Layer 5 (Shale): 400 particles
+Layer 6 (Sandstone): 400 particles
+Layer 7 (Shale): 400 particles
+Layer 8 (Sandstone): 400 particles
+Layer 9 (Shale): 400 particles
+Total particles generated: 4000
+----------------------------------------------------------------------
+
+Initial timestep (soft materials): 6.229577e-04 s
+(Will be recomputed after stiffness restoration)
+----------------------------------------------------------------------
+Fixed bottom wall (ID: 4004) - simulates rigid basement
+
+--- Running in batch mode (no GUI) ---
+
+======================================================================
+STARTING SIMULATION - 10-LAYER STRATIGRAPHIC MODEL
+======================================================================
+Total particles: 4000 (400 per layer × 10 layers)
+Domain: (-10, 10, -10, 10, 0, 10)
+Burial depth: 10 m
+Layer structure: 5 Sandstone + 5 Shale (alternating)
+
+PHASE WORKFLOW:
+ Phase 0: Gravity deposition (target: unbalanced force < 0.01)
+ Phase 1: Overburden application (σv = 0.25 MPa)
+ Phase 2: Fault loading (σv = 0.44 MPa)
+======================================================================
+
+Starting Phase 0: Gravity Deposition...
+(Particles will settle under gravity before bonding)
+
+Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.4188 | KE: 6.86e+05 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  10000 | Unbalanced: 0.0893 | KE: 6.81e+05 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  15000 | Unbalanced: 0.0196 | KE: 1.30e+04 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  20000 | Unbalanced: 0.0088 | KE: 2.45e+03 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  25000 | Unbalanced: 0.0060 | KE: 1.23e+03 (targets: 0.0100, <500)
+
+======================================================================
+PHASE 0 COMPLETE: Gravity Settling
+======================================================================
+Iteration: 27200
+Unbalanced force: 0.005501
+Kinetic energy: 4.919668e+02
+
+Particles have settled under gravity.
+
+--- Starting PHASE 1: Bond Creation + Weak Zone ---
+✓ Created 15058 cohesive bonds
+✓ Enabled bonding for new contacts (crack healing allowed)
+✓ Created FAULT NUCLEATION ZONE: 1572 bonds modified
+  Location: Vertical plane at x=0 (±1m width)
+  Properties: 10% cohesion, 50% friction reduction
+  Purpose: Seed localized shear rupture
+
+
+✓ Starting gradual stiffness restoration (5000 iterations)
+  This prevents force explosion from instantaneous stiffness change
+Phase 1: Stiffness Restoration Step 2/10 | Young's at 20% | dt: 9.791869e-05 s
+Phase 1: Stiffness Restoration Step 3/10 | Young's at 30% | dt: 8.001711e-05 s
+Phase 1: Stiffness Restoration Step 4/10 | Young's at 40% | dt: 6.935455e-05 s
+Phase 1: Stiffness Restoration Step 5/10 | Young's at 50% | dt: 6.208461e-05 s
+Phase 1: Stiffness Restoration Step 6/10 | Young's at 60% | dt: 5.701765e-05 s
+Phase 1: Stiffness Restoration Step 7/10 | Young's at 70% | dt: 5.360653e-05 s
+Phase 1: Stiffness Restoration Step 8/10 | Young's at 80% | dt: 5.086418e-05 s
+Phase 1: Stiffness Restoration Step 9/10 | Young's at 90% | dt: 4.837697e-05 s
+Phase 1: Stiffness Restoration Step 10/10 | Young's at 100% | dt: 4.637469e-05 s
+
+======================================================================
+PHASE 1 COMPLETE: Bonding + Stiffness Restoration
+======================================================================
+Young's modulus restored to target values (2.0-2.5 GPa)
+Timestep: 7.018140e-05 s (0.15×PWave, conservative) | Damping: 0.3
+
+--- Starting PHASE 2: Tectonic Compression (Thrust Mechanics) ---
+Loading mode: HORIZONTAL COMPRESSION (thrust fault simulation)
+  - Bottom boundary: FIXED (rigid basement)
+  - Horizontal stress: 0.93 MPa (8× confining for rupture)
+  - Vertical boundary: Free surface (allows uplift)
+  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)
+  - Stress/Cohesion ratio: 0.15 (needs >0.15 for rupture)
+  - Compression rate: 0.01 s⁻¹ (slower, more stable)
+  - Fault nucleation zone: Vertical plane at x=0
+→ Horizontal compression will drive thrust rupture along weak zone
+======================================================================
+
+
+======================================================================
+SIMULATION COMPLETE: Significant Fault Damage
+======================================================================
+Bond damage: 45.8% (6902/15058)
+Horizontal strain: -0.0005
+Vertical stress: -0.56 MPa
