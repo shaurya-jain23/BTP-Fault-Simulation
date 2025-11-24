@@ -28,11 +28,21 @@ import numpy as np
 # Burial depth for stress calculation - MATCHES MODEL HEIGHT
 BURIAL_DEPTH = 10  # meters (model represents 10m of rock column)
 
-# Domain geometry (in meters)
-DOMAIN_X = (-10, 10) # 20m width
-DOMAIN_Y = (-10, 10) # 20m length
-DOMAIN_Z = (0, 10) # 10m height (10 layers × 1m each)
+# Domain geometry (in meters) - QUASI-3D SLICE
+DOMAIN_X = (-10, 10)  # 20m width (fault strike direction)
+DOMAIN_Y = (-1, 1)    # 2m thickness (thin slice for computational efficiency)
+DOMAIN_Z = (0, 10)    # 10m height (10 layers × 1m each)
 domain = (DOMAIN_X[0], DOMAIN_X[1], DOMAIN_Y[0], DOMAIN_Y[1], DOMAIN_Z[0], DOMAIN_Z[1])
+
+print("\n" + "="*70)
+print("QUASI-3D SLICE GEOMETRY (Computational Efficiency)")
+print("="*70)
+print(f"Domain: {DOMAIN_X[1]-DOMAIN_X[0]:.0f}m (width) × "
+      f"{DOMAIN_Y[1]-DOMAIN_Y[0]:.0f}m (thickness) × "
+      f"{DOMAIN_Z[1]-DOMAIN_Z[0]:.0f}m (height)")
+print(f"Volume: {(DOMAIN_X[1]-DOMAIN_X[0])*(DOMAIN_Y[1]-DOMAIN_Y[0])*(DOMAIN_Z[1]-DOMAIN_Z[0]):.0f} m³")
+print(f"Expected packing fraction: ~60-65% (realistic rock mass)")
+print("="*70 + "\n")
 
 # Particle size - uniform smaller particles for better packing
 PARTICLE_RADIUS = 0.10 # meters (uniform size for all layers) - reduced for better resolution
@@ -200,47 +210,51 @@ print("(Will be recomputed after stiffness restoration)")
 print("-" * 70)
 
 # ============================================================================
-# SECTION 5: BOUNDARY WALLS (Bottom Fixed for Thrust Mechanics)
+# SECTION 5: BOUNDARY WALLS (Corrected)
 # ============================================================================
 
-walls = aabbWalls(
-    [(domain[0], domain[2], domain[4]), (domain[1], domain[3], domain[5])],
-    thickness=0.5,
-    material=materials[0]  # Use first sandstone layer material
+# 1. Define materials for walls
+wall_mat = materials[0]  # High Friction for Bottom/Sides
+
+# --- NEW: Frictionless material for Front/Back (Plane Strain) ---
+frictionless_mat = CohFrictMat(
+    young=1e8, poisson=0.3, frictionAngle=0, density=0, label='frictionless'
 )
-wallIds = O.bodies.append(walls)
+O.materials.append(frictionless_mat)
+# ----------------------------------------------------------------
 
-# Split bottom into two halves: left = fixed footwall, right = hanging wall (movable)
-left_walls = aabbWalls(
-    [(domain[0], domain[2], domain[4]), (0.0, domain[3], domain[4] + 0.5)],
-    thickness=0.5,
-    material=materials[0]
-)
-right_walls = aabbWalls(
-    [(0.0, domain[2], domain[4]), (domain[1], domain[3], domain[4] + 0.5)],
-    thickness=0.5,
-    material=materials[0]
-)
+# 2. Create the Split Bottom (Footwall & Hanging Wall)
+# Left Bottom (Fixed Footwall)
+footwall = utils.box(center=(-5, 0, 0), extents=(5, 1, 0.5), fixed=True, material=wall_mat, wire=False)
+footwall_id = O.bodies.append(footwall)
+print(f"Fixed footwall (ID: {footwall_id}) - simulates rigid basement")
 
-left_ids = O.bodies.append(left_walls)
-right_ids = O.bodies.append(right_walls)
+# Right Bottom (Movable Hanging Wall)
+hanging_wall = utils.box(center=(5, 0, 0), extents=(5, 1, 0.5), fixed=False, material=wall_mat, wire=False)
+hanging_wall_id = O.bodies.append(hanging_wall)  # Save this single ID for Phase 2!
+print(f"Hanging wall (movable) found (ID: {hanging_wall_id}) - will be driven during Phase 2")
 
-# Fix the left (footwall) bottom face to simulate rigid basement
-for wallId in left_ids:
-    wall = O.bodies[wallId]
-    if wall.state.pos[2] <= domain[4] + 0.6:
-        wall.state.blockedDOFs = 'xyzXYZ'
-        print(f"Fixed footwall (ID: {wallId}) - simulates rigid basement")
+# 3. Side Walls (Left/Right) - Keep Friction
+left_wall = utils.box(center=(-10, 0, 5), extents=(0, 1, 5), fixed=True, material=wall_mat)
+O.bodies.append(left_wall)
 
-# Identify the hanging wall (right side bottom face) - keep it movable and record its id
-hanging_wall_id = None
-for wallId in right_ids:
-    wall = O.bodies[wallId]
-    if wall.state.pos[2] <= domain[4] + 0.6:
-        hanging_wall_id = wallId
-        # ensure it's free to move in X and Z (do not block these DOFs)
-        # leave blockedDOFs default so it can be translated by a driver
-        print(f"Hanging wall (movable) found (ID: {wallId}) - will be driven during Phase 2")
+right_wall = utils.box(center=(10, 0, 5), extents=(0, 1, 5), fixed=True, material=wall_mat)
+O.bodies.append(right_wall)
+
+# 4. Front/Back Walls - USE FRICTIONLESS MATERIAL
+# Front Wall (y = -1)
+front_wall = utils.box(center=(0, -1, 5), extents=(10, 0, 5), fixed=True, material=frictionless_mat)
+O.bodies.append(front_wall)
+
+# Back Wall (y = +1)
+back_wall = utils.box(center=(0, 1, 5), extents=(10, 0, 5), fixed=True, material=frictionless_mat)
+O.bodies.append(back_wall)
+
+# Top Wall (z = 10)
+top_wall = utils.box(center=(0, 0, 10), extents=(10, 1, 0), fixed=True, material=wall_mat)
+O.bodies.append(top_wall)
+
+print("Boundary walls created (Front/Back are frictionless for Plane Strain)")
 
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
@@ -269,30 +283,20 @@ O.engines = [
         )]
     ),
 
-    # Very high damping for equilibration and stiffness restoration
-    NewtonIntegrator(damping=0.95, gravity=(0, 0, -9.81)),
+    # Damping handles the energy dissipation
+    NewtonIntegrator(damping=0.6, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
 
-    # Triaxial controller with light confining stress during Phase 0 settling
-    TriaxialStressController(
-        stressMask=3,                    # Control only X,Y axes during Phase 0 (let gravity settle Z naturally)
-        internalCompaction=True,        # ✅ DISABLED during Phase 0 - let gravity work naturally
-        goal1=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
-        goal2=-0.01e6,                   # Very light lateral confining (0.01 MPa = 10 kPa) during settling
-        goal3=0,                         # No Z-axis control during Phase 0 - gravity handles settling
-        thickness=0.5,                   # Match wall thickness
-       # maxStrainRate=(0.01, 0.01, 0.0), # Very slow wall movement to prevent explosion
-        label="triax"
-    ),
+    # REMOVED TRIAXIAL CONTROLLER COMPLETELY - Gravity + Rigid Walls create natural stress state
 
     # Phase control callbacks (order matters!)
-    PyRunner(command='checkGravityEquilibrium()', iterPeriod=100, label='gravityCheck'),
-    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=100, label='stiffnessRestore'),
+    PyRunner(command='checkGravityEquilibrium()', iterPeriod=1000, label='gravityCheck'),
+    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=1000, label='stiffnessRestore'),
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
     # Drive hanging wall every iteration when Phase 2 is active
     PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
 
     # Data collection
-    PyRunner(command='saveData()', iterPeriod=500),
+    PyRunner(command='saveData()', iterPeriod=2000),
     PyRunner(command='monitorBonds()', iterPeriod=1000)
 ]
 
@@ -494,47 +498,9 @@ def gradualStiffnessRestoration():
         print("\n" + "="*70)
         print("PHASE 1 COMPLETE: Bonding + Stiffness Restoration")
         print("="*70)
-        print(f"Young's modulus restored to target values (2.0-2.5 GPa)")
+        print(f"Young's modulus restored to target values (100-125 MPa)")
         print(f"Timestep: {O.dt:.6e} s (0.15×PWave, conservative) | Damping: 0.3")
         
-        # Reset strain reference dimensions so Phase 2 strain starts at 0
-        triax.width0 = triax.width
-        triax.height0 = triax.height
-        triax.depth0 = triax.depth
-        
-        # NOW apply HORIZONTAL COMPRESSION for thrust fault mechanics (Change 2)
-        # - Bottom boundary fixed (rigid basement)
-        # - Horizontal compression from lateral walls moving inward
-        # - Vertical boundary (Top): Stress controlled at ~0 to allow UPLIFT (free surface)
-        
-        triax.stressMask = 7  # Control ALL axes (X,Y compression, Z uplift)
-        triax.goal1 = -horizontal_stress * 8.0  # Compress from X direction (8× for fault rupture)
-        triax.goal2 = -horizontal_stress * 8.0  # Compress from Y direction (8× for fault rupture)  
-        triax.goal3 = -0.01e6  # Vertical target ~0 (atmospheric/free surface) to allow uplift
-        triax.internalCompaction = False  # Disable compaction
-        triax.maxStrainRate = (0.01, 0.01, 0.05)  # Slower compression for quasi-static loading
-        
-        print(f"\n--- Starting PHASE 2: Tectonic Compression (Thrust Mechanics) ---")
-        print(f"Loading mode: HORIZONTAL COMPRESSION (thrust fault simulation)")
-        print(f"  - Bottom boundary: FIXED (rigid basement)")
-        print(f"  - Horizontal stress: {horizontal_stress*8.0/1e6:.2f} MPa (8× confining for rupture)")
-        print(f"  - Vertical boundary: Free surface (allows uplift)")
-        print(f"  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)")
-        print(f"  - Stress/Cohesion ratio: {(horizontal_stress*8.0/1e6)/6.3:.2f} (needs >0.15 for rupture)")
-        print(f"  - Compression rate: 0.01 s⁻¹ (slower, more stable)")
-        print(f"  - Fault nucleation zone: Vertical plane at x=0")
-        print(f"→ Horizontal compression will drive thrust rupture along weak zone")
-        print("="*70 + "\n")
-        
-        phase2_active = True
-        phase1_complete = True
-        phase1_active = False
-        # Disable triax controller for kinematic wall-driven loading
-        try:
-            triax.dead = True
-        except:
-            pass
-
         # Configure hanging wall kinematics: dip and velocity magnitude
         global hanging_wall_vel
         dip_angle = np.radians(60)  # 60° thrust fault
@@ -543,6 +509,20 @@ def gradualStiffnessRestoration():
         vel_z = vel_mag * np.sin(dip_angle)
         # Move hanging wall leftwards (-X) and upwards (+Z)
         hanging_wall_vel = (-vel_x, 0.0, vel_z)
+        
+        print(f"\n--- Starting PHASE 2: Kinematic Hanging Wall Drive (Thrust Mechanics) ---")
+        print(f"Loading mode: Kinematic wall movement (no servo control)")
+        print(f"  - Bottom footwall: FIXED (rigid basement)")
+        print(f"  - Hanging wall velocity: {vel_mag*1e6:.1f} μm/s at {60}° dip")
+        print(f"  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)")
+        print(f"  - Natural stress state from gravity + rigid walls")
+        print(f"  - Fault nucleation zone: Vertical plane at x=0")
+        print(f"→ Hanging wall will drive thrust rupture along weak zone")
+        print("="*70 + "\n")
+        
+        phase2_active = True
+        phase1_complete = True
+        phase1_active = False
 
         O.saveTmp('phase1_complete')
 
@@ -555,35 +535,29 @@ def checkFaultLoading():
     Phase 2: Monitor tectonic loading and fault rupture development.
 
     Termination criteria:
-    1. Axial strain exceeds 15% (large deformation)
+    1. Hanging wall displacement exceeds threshold (large deformation)
     2. Significant bond breakage (>30% of total bonds indicating fault formation)
-    3. Stress drop indicating rupture completion
     """
     global simulation_stopped, brokenBonds
 
     if phase2_active and not simulation_stopped:
         try:
-            # Get current strain state
-            strain_x = triax.strain[0]
-            strain_y = triax.strain[1]
-            strain_z = triax.strain[2]
-
-            # Get current stress
-            sigma_z = triax.stress(2)[2]
+            # Get hanging wall displacement
+            hw_pos = O.bodies[hanging_wall_id].state.pos
+            hw_disp_x = hw_pos[0] - 5.0  # Initial position was x=5.0
+            hw_disp_z = hw_pos[2] - 0.0  # Initial position was z=0.0
 
             # Count broken bonds
             broken_now = sum(1 for i in O.interactions if i.phys.cohesionBroken)
             brokenBonds = broken_now
             bond_damage_ratio = broken_now / total_bonds if total_bonds > 0 else 0
 
-            # Termination check 1: Excessive horizontal shortening (15%)
-            if abs(strain_x) > 0.15:
+            # Termination check 1: Excessive hanging wall displacement (3m horizontal)
+            if abs(hw_disp_x) > 3.0:
                 print("\n" + "="*70)
-                print("SIMULATION COMPLETE: Target Horizontal Shortening Reached")
+                print("SIMULATION COMPLETE: Target Displacement Reached")
                 print("="*70)
-                print(f"Final horizontal strain: {strain_x:.4f} (15% limit)")
-                print(f"Final vertical uplift strain: {strain_z:.4f}")
-                print(f"Final vertical stress: {-sigma_z/1e6:.2f} MPa")
+                print(f"Hanging wall displacement: X={hw_disp_x:.2f}m, Z={hw_disp_z:.2f}m")
                 print(f"Broken bonds: {broken_now} / {total_bonds} ({bond_damage_ratio*100:.1f}%)")
 
                 stopSimulation()
@@ -594,31 +568,30 @@ def checkFaultLoading():
                 print("SIMULATION COMPLETE: Significant Fault Damage")
                 print("="*70)
                 print(f"Bond damage: {bond_damage_ratio*100:.1f}% ({broken_now}/{total_bonds})")
-                print(f"Horizontal strain: {strain_x:.4f}")
-                print(f"Vertical stress: {-sigma_z/1e6:.2f} MPa")
+                print(f"Hanging wall displacement: X={hw_disp_x:.2f}m, Z={hw_disp_z:.2f}m")
 
                 stopSimulation()
 
             # Progress monitoring
             if O.iter % 2000 == 0:
-                sigma_x = triax.stress(0)[0]
                 print(f"Phase 2 (Fault Loading): Iteration {O.iter:6d} | "
-                      f"εx = {strain_x:.4f} | "
-                      f"σx = {-sigma_x/1e6:.2f} MPa | "
-                      f"εz (uplift) = {strain_z:.4f} | "
+                      f"HW disp: X={hw_disp_x:.3f}m, Z={hw_disp_z:.3f}m | "
                       f"Broken bonds = {broken_now} ({bond_damage_ratio*100:.1f}%)")
 
         except Exception as e:
-            pass  # Stress not available yet
+            pass  # Data not available yet
 
 def driveHangingWall():
     """Set hanging wall velocity every iteration during Phase 2."""
     global hanging_wall_id, hanging_wall_vel
     if phase2_active and not simulation_stopped and hanging_wall_id is not None:
         try:
-            # Apply velocity directly to the hanging wall rigid body
-            b = O.bodies[hanging_wall_id]
-            b.state.vel = hanging_wall_vel
+            body = O.bodies[hanging_wall_id]
+            body.state.vel = hanging_wall_vel
+            
+            # UPDATED: Block Rotations (XYZ) so the wall stays flat, 
+            # but allow Translations (xyz) to be driven by velocity
+            body.state.blockedDOFs = 'XYZ'
         except Exception:
             pass
 
@@ -654,26 +627,24 @@ def stopSimulation():
 # ============================================================================
 
 def saveData():
-    """Record stress, strain, and bond status at regular intervals"""
-    if phase0_complete: # Only collect data after gravity settling
+    """Record hanging wall position, bond status at regular intervals"""
+    if phase0_complete:  # Only collect data after gravity settling
         try:
+            # Get hanging wall position for tracking
+            hw_pos = O.bodies[hanging_wall_id].state.pos if hanging_wall_id else (0, 0, 0)
+            
             plot.addData(
                 iteration=O.iter,
-                # Stresses (convert to MPa)
-                sigma_xx=-triax.stress(0)[0]/1e6,
-                sigma_yy=-triax.stress(1)[1]/1e6,
-                sigma_zz=-triax.stress(2)[2]/1e6,
-                # Strains
-                epsilon_xx=triax.strain[0],
-                epsilon_yy=triax.strain[1],
-                epsilon_zz=triax.strain[2],
+                # Hanging wall position
+                hw_x=hw_pos[0],
+                hw_z=hw_pos[2],
                 # Bond tracking
                 broken_bonds=brokenBonds,
                 active_bonds=total_bonds - brokenBonds,
                 damage_ratio=brokenBonds/total_bonds if total_bonds > 0 else 0
             )
         except:
-            pass # Data not ready yet
+            pass  # Data not ready yet
 
 def monitorBonds():
     """Track bond breakage evolution"""
@@ -685,9 +656,8 @@ def monitorBonds():
 
 # Plot configuration
 plot.plots = {
-    'iteration': ('sigma_zz', 'sigma_xx'), # Stress evolution
-    'iteration ': ('epsilon_zz',), # Strain evolution
-    'iteration  ': ('broken_bonds', 'active_bonds') # Bond damage
+    'iteration': ('hw_x', 'hw_z'),  # Hanging wall position evolution
+    'iteration ': ('broken_bonds', 'active_bonds')  # Bond damage
 }
 
 # ============================================================================
@@ -758,7 +728,7 @@ print("="*70 + "\n")
 
 print("Starting Phase 0: Gravity Deposition...")
 print("(Particles will settle under gravity before bonding)\n")
-
+O.run()
 # Simulation will run until manually stopped or termination criteria met
 # Use O.run() for batch mode or click Play in GUI for interactive mode
 
