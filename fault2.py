@@ -296,6 +296,21 @@ O.engines = [
     PyRunner(command='monitorBonds()', iterPeriod=1000)
 ]
 
+O.engines = O.engines + [
+    # Save a snapshot every 2000 iterations
+    VTKExporter(
+        fileName='simulation_snapshots/3d_data-', 
+        iterPeriod=2000, 
+        what=[
+            ('dist','b.state.pos.norm()'),  # Color by distance
+            ('radius','b.shape.radius'),    # Save radius (crucial for visualization)
+            ('displacement','b.state.displ'), # See movement
+            ('stress','bodyStress(b.id)'),    # See stress concentrations
+            ('material_type','b.material.id') # Differentiate Sandstone/Shale
+        ],
+        label='vtk_recorder'
+    )
+]
 # Timestep will be calculated after materials are added to simulation
 # (See below after particle generation)
 
