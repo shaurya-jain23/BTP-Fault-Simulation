@@ -1,4 +1,5 @@
 from yade import pack, plot, utils
+from yade import export
 import numpy as np
 
 # ============================================================================
@@ -302,7 +303,7 @@ O.engines = [
 
 O.engines = O.engines + [
     # Save a snapshot every 2000 iterations
-    VTKExporter(
+    export.VTKExporter(
         fileName='simulation_snapshots/3d_data-', 
         iterPeriod=2000, 
         what=[
