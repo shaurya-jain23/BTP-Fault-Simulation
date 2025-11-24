@@ -1,4 +1,4 @@
-from yade import pack, plot, qt, utils
+from yade import pack, plot, utils
 import numpy as np
 
 # ============================================================================
@@ -679,47 +679,47 @@ plot.plots = {
 # SECTION 12: VISUALIZATION SETUP
 # ============================================================================
 
-try:
-    from yade import qt
-    qt.Controller()
-    v = qt.View()
+# try:
+#     from yade import qt
+#     qt.Controller()
+#     v = qt.View()
 
-    # Color particles by layer for visual identification
-    # Alternating colors for sandstone (warm) and shale (cool)
-    for b in O.bodies:
-        if isinstance(b.shape, Sphere):
-            z = b.state.pos[2]
+#     # Color particles by layer for visual identification
+#     # Alternating colors for sandstone (warm) and shale (cool)
+#     for b in O.bodies:
+#         if isinstance(b.shape, Sphere):
+#             z = b.state.pos[2]
             
-            # Determine layer based on z-position
-            layer_idx = None
-            for i in range(10):
-                if LAYER_BOUNDARIES[i] <= z < LAYER_BOUNDARIES[i + 1]:
-                    layer_idx = i
-                    break
-            if layer_idx is None:
-                layer_idx = 9
+#             # Determine layer based on z-position
+#             layer_idx = None
+#             for i in range(10):
+#                 if LAYER_BOUNDARIES[i] <= z < LAYER_BOUNDARIES[i + 1]:
+#                     layer_idx = i
+#                     break
+#             if layer_idx is None:
+#                 layer_idx = 9
             
-            # Color by layer type
-            if layer_idx % 2 == 0:
-                # Sandstone layers - warm colors (brown/orange gradient)
-                intensity = 0.6 + (layer_idx / 10) * 0.3
-                b.shape.color = (0.8 * intensity, 0.5 * intensity, 0.3 * intensity)
-            else:
-                # Shale layers - cool colors (blue/gray gradient)
-                intensity = 0.5 + (layer_idx / 10) * 0.3
-                b.shape.color = (0.4 * intensity, 0.5 * intensity, 0.7 * intensity)
+#             # Color by layer type
+#             if layer_idx % 2 == 0:
+#                 # Sandstone layers - warm colors (brown/orange gradient)
+#                 intensity = 0.6 + (layer_idx / 10) * 0.3
+#                 b.shape.color = (0.8 * intensity, 0.5 * intensity, 0.3 * intensity)
+#             else:
+#                 # Shale layers - cool colors (blue/gray gradient)
+#                 intensity = 0.5 + (layer_idx / 10) * 0.3
+#                 b.shape.color = (0.4 * intensity, 0.5 * intensity, 0.7 * intensity)
 
-    # Enable bond visualization
-    renderer = v.renderer
-    renderer.intrWire = True      # Show bonds as wires
-    renderer.intrRadius = 0.02    # Thin bond representation
+#     # Enable bond visualization
+#     renderer = v.renderer
+#     renderer.intrWire = True      # Show bonds as wires
+#     renderer.intrRadius = 0.02    # Thin bond representation
 
-    print("\n--- 3D Visualization Active ---")
-    print("Bond wires enabled (will disappear when broken)")
-    print("Layer colors: Warm (sandstone) | Cool (shale)")
+#     print("\n--- 3D Visualization Active ---")
+#     print("Bond wires enabled (will disappear when broken)")
+#     print("Layer colors: Warm (sandstone) | Cool (shale)")
 
-except:
-    print("\n--- Running in batch mode (no GUI) ---")
+# except:
+#     print("\n--- Running in batch mode (no GUI) ---")
 
 # ============================================================================
 # SECTION 13: SIMULATION START
