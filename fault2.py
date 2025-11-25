@@ -46,11 +46,11 @@ print(f"Expected packing fraction: ~60-65% (realistic rock mass)")
 print("="*70 + "\n")
 
 # Particle size - uniform smaller particles for better packing
-PARTICLE_RADIUS = 0.10 # meters (uniform size for all layers) - reduced for better resolution
+PARTICLE_RADIUS = 0.07 # meters (uniform size for all layers) - reduced for better resolution
 
 # Number of particles per 1m layer (scaled for smaller particle size)
 # With r=0.10m (vs original 0.25m), we need ~15× more particles for proper packing
-PARTICLES_PER_LAYER = 2000 # Total: 60,000 particles (increased from 400 for better resolution)
+PARTICLES_PER_LAYER = 6000 # Total: 60,000 particles (increased from 400 for better resolution)
 
 # Layer boundaries (10 layers, each 1m thick) - POSITIVE Z upward
 LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -299,19 +299,21 @@ O.engines = [
     # Data collection
     PyRunner(command='saveData()', iterPeriod=2000),
     PyRunner(command='monitorBonds()', iterPeriod=1000),
-    PyRunner(command='exportVTK()', iterPeriod=2000, label='vtk_exporter')
+    export.VTKExporter(
+        'simulation_snapshots/3d_data-',
+        iterPeriod=2000, 
+        what=[
+            ('dist','b.state.pos.norm()'),
+            ('radius','b.shape.radius'),
+            ('displacement','b.state.displ'),
+            ('stress','bodyStress(b.id)'),
+            ('material_type','b.material.id') 
+        ],
+        label='vtk_recorder'
+    )
 ]
 
 
-# VTK Export function (called by PyRunner)
-def exportVTK():
-    """Export VTK snapshots for visualization"""
-    export.VTKExporter(
-        'simulation_snapshots/snapshot',
-        spheres='spheres',
-        facets='facets',
-        ascii=False
-    ).exportSpheres(ids='all')
 
 # Then add a PyRunner to call it periodically
 # (Add this to your O.engines list, after other PyRunners):
