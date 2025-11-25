@@ -50,7 +50,7 @@ PARTICLE_RADIUS = 0.10 # meters (uniform size for all layers) - reduced for bett
 
 # Number of particles per 1m layer (scaled for smaller particle size)
 # With r=0.10m (vs original 0.25m), we need ~15× more particles for proper packing
-PARTICLES_PER_LAYER = 6000 # Total: 60,000 particles (increased from 400 for better resolution)
+PARTICLES_PER_LAYER = 2000 # Total: 60,000 particles (increased from 400 for better resolution)
 
 # Layer boundaries (10 layers, each 1m thick) - POSITIVE Z upward
 LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -298,24 +298,32 @@ O.engines = [
 
     # Data collection
     PyRunner(command='saveData()', iterPeriod=2000),
-    PyRunner(command='monitorBonds()', iterPeriod=1000)
+    PyRunner(command='monitorBonds()', iterPeriod=1000),
+    PyRunner(command='exportVTK()', iterPeriod=2000, label='vtk_exporter')
 ]
 
-O.engines = O.engines + [
-    # Save a snapshot every 2000 iterations
+
+# VTK Export function (called by PyRunner)
+def exportVTK():
+    """Export VTK snapshots for visualization"""
     export.VTKExporter(
-        fileName='simulation_snapshots/3d_data-', 
-        iterPeriod=2000, 
-        what=[
-            ('dist','b.state.pos.norm()'),  # Color by distance
-            ('radius','b.shape.radius'),    # Save radius (crucial for visualization)
-            ('displacement','b.state.displ'), # See movement
-            ('stress','bodyStress(b.id)'),    # See stress concentrations
-            ('material_type','b.material.id') # Differentiate Sandstone/Shale
-        ],
-        label='vtk_recorder'
-    )
-]
+        'simulation_snapshots/snapshot',
+        spheres='spheres',
+        facets='facets',
+        ascii=False
+    ).exportSpheres(ids='all')
+
+# Then add a PyRunner to call it periodically
+# (Add this to your O.engines list, after other PyRunners):
+
+# O.engines += [
+#     VTKRecorder(
+#         fileName='simulation_snapshots/3d_data-',
+#         iterPeriod=2000,
+#         recorders=['spheres', 'intr', 'stress', 'velocity'],
+#         label='vtk_recorder'
+#     )
+# ]
 # Timestep will be calculated after materials are added to simulation
 # (See below after particle generation)
 
