@@ -260,6 +260,12 @@ print("Boundary walls created (Front/Back are frictionless for Plane Strain)")
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
 # ============================================================================
+vtk_recorder = VTKRecorder(
+    fileName='simulation_snapshots/3d_data-',
+    recorders=['spheres', 'velocity', 'stress', 'ids'], 
+    iterPeriod=2000, 
+    label='vtk_recorder'
+)
 
 O.engines = [
     ForceResetter(),
@@ -299,18 +305,7 @@ O.engines = [
     # Data collection
     PyRunner(command='saveData()', iterPeriod=2000),
     PyRunner(command='monitorBonds()', iterPeriod=1000),
-    export.VTKExporter(
-        'simulation_snapshots/3d_data-',
-        iterPeriod=2000, 
-        what=[
-            ('dist','b.state.pos.norm()'),
-            ('radius','b.shape.radius'),
-            ('displacement','b.state.displ'),
-            ('stress','bodyStress(b.id)'),
-            ('material_type','b.material.id') 
-        ],
-        label='vtk_recorder'
-    )
+    vtk_recorder
 ]
 
 
@@ -447,7 +442,7 @@ def checkGravityEquilibrium():
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
-        if O.iter % 5000 == 0:
+        if O.iter % 100 == 0:
             print(f"Phase 0 (Settling): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} | KE: {ke:.2e} (targets: {target_unbalanced:.4f}, <{target_ke:.0f})")
 
 # ============================================================================

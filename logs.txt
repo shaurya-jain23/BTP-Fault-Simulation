@@ -1,6 +1,6 @@
 Welcome to Yade 2022.01a
 Using python version: 3.10.12 (main, Aug 15 2025, 14:32:43) [GCC 11.4.0]
-TCP python prompt on localhost:9000, auth cookie `scsydu'
+TCP python prompt on localhost:9000, auth cookie `kcsuye'
 XMLRPC info provider on http://localhost:21000
 Running script fault2.py
 
@@ -32,52 +32,127 @@ Fault loading stress (Phase 2): 0.44 MPa
 ----------------------------------------------------------------------
 
 --- Generating 10-Layer Particle Packing ---
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1896 spheres were added, although you requested 6000.
-Layer 0 (Sandstone): 6000 particles | Z-range: [0.0, 1.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1888 spheres were added, although you requested 6000.
-Layer 1 (Shale): 6000 particles | Z-range: [1.0, 2.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1824 spheres were added, although you requested 6000.
-Layer 2 (Sandstone): 6000 particles | Z-range: [2.0, 3.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1820 spheres were added, although you requested 6000.
-Layer 3 (Shale): 6000 particles | Z-range: [3.0, 4.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1813 spheres were added, although you requested 6000.
-Layer 4 (Sandstone): 6000 particles | Z-range: [4.0, 5.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1888 spheres were added, although you requested 6000.
-Layer 5 (Shale): 6000 particles | Z-range: [5.0, 6.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1760 spheres were added, although you requested 6000.
-Layer 6 (Sandstone): 6000 particles | Z-range: [6.0, 7.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1781 spheres were added, although you requested 6000.
-Layer 7 (Shale): 6000 particles | Z-range: [7.0, 8.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1825 spheres were added, although you requested 6000.
-Layer 8 (Sandstone): 6000 particles | Z-range: [8.0, 9.0] m | r=0.1m
-<WARNING> SpherePack:336 long int yade::SpherePack::makeCloud(yade::Vector3r, yade::Vector3r, yade::Real, yade::Real, int, bool, yade::Real, const std::vector<double>&, const std::vector<double>&, bool, int, yade::Matrix3r): Exceeded 1000 tries to insert non-overlapping sphere to packing. Only 1863 spheres were added, although you requested 6000.
-Layer 9 (Shale): 6000 particles | Z-range: [9.0, 10.0] m | r=0.1m
+Layer 0 (Sandstone): 6000 particles | Z-range: [0.0, 1.0] m | r=0.07m
+Layer 1 (Shale): 6000 particles | Z-range: [1.0, 2.0] m | r=0.07m
+Layer 2 (Sandstone): 6000 particles | Z-range: [2.0, 3.0] m | r=0.07m
+Layer 3 (Shale): 6000 particles | Z-range: [3.0, 4.0] m | r=0.07m
+Layer 4 (Sandstone): 6000 particles | Z-range: [4.0, 5.0] m | r=0.07m
+Layer 5 (Shale): 6000 particles | Z-range: [5.0, 6.0] m | r=0.07m
+Layer 6 (Sandstone): 6000 particles | Z-range: [6.0, 7.0] m | r=0.07m
+Layer 7 (Shale): 6000 particles | Z-range: [7.0, 8.0] m | r=0.07m
+Layer 8 (Sandstone): 6000 particles | Z-range: [8.0, 9.0] m | r=0.07m
+Layer 9 (Shale): 6000 particles | Z-range: [9.0, 10.0] m | r=0.07m
 
 --- Particle Distribution Summary ---
-Layer 0 (Sandstone): 1896 particles
-Layer 1 (Shale): 1888 particles
-Layer 2 (Sandstone): 1824 particles
-Layer 3 (Shale): 1820 particles
-Layer 4 (Sandstone): 1813 particles
-Layer 5 (Shale): 1888 particles
-Layer 6 (Sandstone): 1760 particles
-Layer 7 (Shale): 1781 particles
-Layer 8 (Sandstone): 1825 particles
-Layer 9 (Shale): 1863 particles
-Total particles generated: 18358
+Layer 0 (Sandstone): 6000 particles
+Layer 1 (Shale): 6000 particles
+Layer 2 (Sandstone): 6000 particles
+Layer 3 (Shale): 6000 particles
+Layer 4 (Sandstone): 6000 particles
+Layer 5 (Shale): 6000 particles
+Layer 6 (Sandstone): 6000 particles
+Layer 7 (Shale): 6000 particles
+Layer 8 (Sandstone): 6000 particles
+Layer 9 (Shale): 6000 particles
+Total particles generated: 60000
 ----------------------------------------------------------------------
 
-Initial timestep (soft materials): 1.386282e-03 s
+Initial timestep (soft materials): 7.791066e-04 s
 (Will be recomputed after stiffness restoration)
 ----------------------------------------------------------------------
-Fixed footwall (ID: 18358) - simulates rigid basement
-Hanging wall (movable) found (ID: 18359) - will be driven during Phase 2
+Fixed footwall (ID: 60000) - simulates rigid basement
+Hanging wall (movable) found (ID: 60001) - will be driven during Phase 2
 Boundary walls created (Front/Back are frictionless for Plane Strain)
-Traceback (most recent call last):
-  File "/usr/bin/yade", line 343, in runScript
-    execfile(script,globals())
-  File "/usr/lib/python3/dist-packages/past/builtins/misc.py", line 87, in execfile
-    exec_(code, myglobals, mylocals)
-  File "fault2.py", line 306, in <module>
-    export.VTKExporter(
-TypeError: VTKExporter.__init__() got an unexpected keyword argument 'fileName'
+
+======================================================================
+STARTING SIMULATION - 10-LAYER STRATIGRAPHIC MODEL
+======================================================================
+Total particles: 60000 (6000 per layer × 10 layers)
+Domain: (-10, 10, -1, 1, 0, 10)
+Burial depth: 10 m
+Layer structure: 5 Sandstone + 5 Shale (alternating)
+Particle radius: 0.07 m (high resolution)
+
+PHASE WORKFLOW:
+ Phase 0: Gravity deposition (target: unbalanced force < 0.01)
+ Phase 1: Bond formation + stiffness restoration (100 MPa target)
+ Phase 2: Kinematic hanging wall drive (thrust fault)
+======================================================================
+
+Starting Phase 0: Gravity Deposition...
+(Particles will settle under gravity before bonding)
+
+[[ ^L clears screen, ^U kills line. F8 plot. ]]
+
+Phase 0 (Settling): Iteration   1000 | Unbalanced: 0.6554 | KE: 1.25e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.6768 | KE: 3.27e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.2397 | KE: 4.56e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.1984 | KE: 8.68e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.1984 | KE: 1.43e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.2001 | KE: 2.15e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.2021 | KE: 3.03e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.2040 | KE: 4.07e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.2063 | KE: 5.26e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  10000 | Unbalanced: 0.2078 | KE: 6.62e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  11000 | Unbalanced: 0.2093 | KE: 8.15e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  12000 | Unbalanced: 0.2105 | KE: 9.84e+07 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  13000 | Unbalanced: 0.2115 | KE: 1.17e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  14000 | Unbalanced: 0.2127 | KE: 1.37e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  15000 | Unbalanced: 0.2132 | KE: 1.59e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  16000 | Unbalanced: 0.2139 | KE: 1.83e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  17000 | Unbalanced: 0.2147 | KE: 2.08e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  18000 | Unbalanced: 0.2155 | KE: 2.35e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  19000 | Unbalanced: 0.2168 | KE: 2.63e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  20000 | Unbalanced: 0.2170 | KE: 2.94e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  21000 | Unbalanced: 0.2178 | KE: 3.26e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  22000 | Unbalanced: 0.2180 | KE: 3.60e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  23000 | Unbalanced: 0.2185 | KE: 3.95e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  24000 | Unbalanced: 0.2192 | KE: 4.32e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  25000 | Unbalanced: 0.2190 | KE: 4.71e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  26000 | Unbalanced: 0.2195 | KE: 5.12e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  27000 | Unbalanced: 0.2200 | KE: 5.54e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  28000 | Unbalanced: 0.2204 | KE: 5.98e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration  29000 | Unbalanced: 0.2208 | KE: 6.44e+08 (targets: 0.0100, <500)
+
+======================================================================
+PHASE 0 COMPLETE: Gravity Settling
+======================================================================
+Iteration: 30000
+Unbalanced force: 0.221468
+Kinetic energy: 6.916301e+08
+(Forced completion due to timeout)
+
+Particles have settled under gravity.
+
+--- Starting PHASE 1: Bond Creation + Weak Zone ---
+✓ Created 100611 cohesive bonds
+✓ Enabled bonding for new contacts (crack healing allowed)
+✓ Created FAULT NUCLEATION ZONE: 1661 bonds modified
+  Location: Vertical plane at x=0 (±1m width)
+  Properties: 10% cohesion, 50% friction reduction
+  Purpose: Seed localized shear rupture
+
+
+✓ Starting gradual stiffness restoration (5000 iterations)
+  This prevents force explosion from instantaneous stiffness change
+Phase 0 (Settling): Iteration  30000 | Unbalanced: 0.2215 | KE: 6.92e+08 (targets: 0.0100, <500)
+Phase 1: Stiffness Restoration Step 3/10 | Young's at 30% | dt: 4.498174e-05 s
+Phase 1: Stiffness Restoration Step 5/10 | Young's at 50% | dt: 3.484271e-05 s
+Phase 1: Stiffness Restoration Step 7/10 | Young's at 70% | dt: 2.944746e-05 s
+Phase 1: Stiffness Restoration Step 9/10 | Young's at 90% | dt: 2.597022e-05 s
+
+======================================================================
+PHASE 1 COMPLETE: Bonding + Stiffness Restoration
+======================================================================
+Young's modulus restored to target values (100-125 MPa)
+Timestep: 3.695627e-05 s (0.15×PWave, conservative) | Damping: 0.3
+
+--- Starting PHASE 2: Kinematic Hanging Wall Drive (Thrust Mechanics) ---
+Loading mode: Kinematic wall movement (no servo control)
+  - Bottom footwall: FIXED (rigid basement)
+  - Hanging wall velocity: 100.0 μm/s at 60° dip
+  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)
+  - Natural stress state from gravity + rigid walls
+  - Fault nucleation zone: Vertical plane at x=0
+→ Hanging wall will drive thrust rupture along weak zone
+======================================================================
