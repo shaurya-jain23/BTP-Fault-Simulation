@@ -681,6 +681,20 @@ def checkFaultLoading():
         except Exception as e:
             pass  # Data not available yet
 
+def driveHangingWall():
+    """Set hanging wall velocity every iteration during Phase 2."""
+    global hanging_wall_id, hanging_wall_vel
+    if phase2_active and not simulation_stopped and hanging_wall_id is not None:
+        try:
+            body = O.bodies[hanging_wall_id]
+            body.state.vel = hanging_wall_vel
+            
+            # UPDATED: Block Rotations (XYZ) so the wall stays flat, 
+            # but allow Translations (xyz) to be driven by velocity
+            body.state.blockedDOFs = 'XYZ'
+        except Exception:
+            pass
+
 
 def stopSimulation():
     """Clean shutdown with data export"""
