@@ -79,7 +79,7 @@ for i in range(10):
         mat = CohFrictMat(
             young=target_young * SETTLING_STIFFNESS_FACTOR,  # Reduced for settling
             poisson=0.28,                      # Poisson's ratio
-            frictionAngle=np.radians(35),      # 35° internal friction angle
+            frictionAngle=0.0,                 # SET TO 0 FOR SETTLING (Was 35 deg)
             density=2400,                      # kg/m³
             isCohesive=True,                   # Enable bonding
             normalCohesion=8.04e6 * depth_factor,  # 8.04 MPa tensile strength
@@ -97,7 +97,7 @@ for i in range(10):
         mat = CohFrictMat(
             young=target_young * SETTLING_STIFFNESS_FACTOR,  # Reduced for settling
             poisson=0.35,                      # 0.35 (clay-rich)
-            frictionAngle=np.radians(28),      # 28° (lower than sandstone)
+            frictionAngle=0.0,                 # SET TO 0 FOR SETTLING (Was 28 deg)
             density=2600,                      # kg/m³ (denser, clay-rich)
             isCohesive=True,
             normalCohesion=6.3e6 * depth_factor,   # 6.3 MPa tensile strength
@@ -412,13 +412,13 @@ def checkGravityEquilibrium():
         unbalanced = utils.unbalancedForce()
 
         # Use relaxed equilibration criterion:
-        # - target unbalanced force < 0.01 (with reduced stiffness, should settle faster)
+        # - target unbalanced force < 0.05 (relaxed for 60k particles)
         # - kinetic energy < 1 (realistic for 6000 particles with soft materials)
         # - minimum iterations before checking: 20000 (reduced from 10000)
         # - forced timeout: 90000 iterations (reduced from 35000)
         min_iters = 20000
         timeout_iters = 90000
-        target_unbalanced = 0.01  # Stricter with softer materials
+        target_unbalanced = 0.05  # RELAXED for large system (was 0.01)
         target_ke = 1.0  # Kinetic energy threshold (relaxed for large system)
 
         # Monitor kinetic energy for additional insight
@@ -438,6 +438,31 @@ def checkGravityEquilibrium():
 
                 print(f"\nParticles have settled under gravity.")
                 print(f"\n--- Starting PHASE 1: Bond Creation + Weak Zone ---")
+
+                # --- NEW STEP: RESTORE FRICTION ---
+                print("Restoring material friction (Sandstone=35°, Shale=28°)...")
+                for i in range(10):
+                    mat_name = f"Sandstone_Layer{i}" if i%2==0 else f"Shale_Layer{i}"
+                    # Find material by label and update friction
+                    for mat in O.materials:
+                        if mat.label == mat_name:
+                            if i % 2 == 0:
+                                mat.frictionAngle = np.radians(35)  # Restore Sandstone
+                            else:
+                                mat.frictionAngle = np.radians(28)  # Restore Shale
+                
+                # Update existing contacts to new friction
+                for i in O.interactions:
+                    if i.phys:
+                        # Get material of body1 (approximate - use first sandstone/shale friction)
+                        i.phys.tangensOfFrictionAngle = np.tan(np.radians(32))  # Average friction
+                
+                print("✓ Friction restored.")
+                
+                # --- NEW STEP: RESET FORCES ---
+                # This stops the "explosion" by deleting ghost forces from settling
+                O.forces.reset()
+                print("✓ Forces reset.")
 
                 # NOW create cohesive bonds between settled particles
                 bond_count = 0
@@ -487,9 +512,9 @@ def checkGravityEquilibrium():
                 phase2_active = True
                 phase1_complete = True  # Mark Phase 1 as complete even though we skipped restoration
                 
-                # Configure hanging wall velocity (UPDATED SPEED: 0.05 m/s)
+                # Configure hanging wall velocity (UPDATED SPEED: 0.01 m/s)
                 dip_angle = np.radians(60)  # 60° thrust fault
-                vel_mag = 0.05  # m/s - Quasi-static driving velocity (500x faster than before)
+                vel_mag = 0.01  # m/s - 1 cm/s (Safer start, was 0.05)
                 vel_x = vel_mag * np.cos(dip_angle)
                 vel_z = vel_mag * np.sin(dip_angle)
                 hanging_wall_vel = (-vel_x, 0.0, vel_z)
