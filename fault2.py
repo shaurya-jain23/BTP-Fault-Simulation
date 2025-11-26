@@ -63,8 +63,8 @@ LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 materials = []
 original_youngs = []  # Store original Young's modulus for gradual restoration
 
-# Stiffness reduction factor for Phase 0 settling (do not reduce: use full stiffness)
-SETTLING_STIFFNESS_FACTOR = 1.0  # Use full target stiffness during settling
+# Stiffness reduction factor for Phase 0 settling (will be gradually restored after bonding)
+SETTLING_STIFFNESS_FACTOR = 0.001  # Use 0.1% of target stiffness during settling
 
 for i in range(10):
     if i % 2 == 0:
@@ -211,60 +211,107 @@ print("(Will be recomputed after stiffness restoration)")
 print("-" * 70)
 
 # ============================================================================
-# SECTION 5: BOUNDARY WALLS (Corrected)
+# SECTION 5: BOUNDARY WALLS (Sealed Split-Box with Thickness)
 # ============================================================================
 
-# 1. Define materials for walls
-wall_mat = materials[0]  # High Friction for Bottom/Sides
+# 1. Define materials
+# High Friction for Top/Bottom/Sides (Sandstone-like)
+wall_mat = materials[0] 
 
-# --- NEW: Frictionless material for Front/Back (Plane Strain) ---
+# Frictionless for Front/Back (Simulates infinite Plane Strain)
 frictionless_mat = CohFrictMat(
     young=1e8, poisson=0.3, frictionAngle=0, density=0, label='frictionless'
 )
 O.materials.append(frictionless_mat)
-# ----------------------------------------------------------------
 
-# 2. Create the Split Bottom (Footwall & Hanging Wall)
+# Wall thickness to prevent tunneling/visual gaps
+THICK = 0.2 
+
+# ----------------------------------------------------------------------------
+# A. THE BOTTOM (Split into Footwall and Hanging Wall)
+# ----------------------------------------------------------------------------
 # Left Bottom (Fixed Footwall)
-footwall = utils.box(center=(-5, 0, 0), extents=(5, 1, 0.5), fixed=True, material=wall_mat, wire=False)
+footwall = utils.box(
+    center=(-5 - THICK/2, 0, -THICK/2),  # Shifted to keep inner surface at z=0
+    extents=(5 + THICK/2, 1 + THICK, THICK/2), # Overlap corners
+    fixed=True, 
+    material=wall_mat, 
+    wire=False
+)
 footwall_id = O.bodies.append(footwall)
-print(f"Fixed footwall (ID: {footwall_id}) - simulates rigid basement")
 
-# Right Bottom (Movable Hanging Wall)
-hanging_wall = utils.box(center=(5, 0, 0), extents=(5, 1, 0.5), fixed=False, material=wall_mat, wire=False)
-hanging_wall_id = O.bodies.append(hanging_wall)  # Save this single ID for Phase 2!
-print(f"Hanging wall (movable) found (ID: {hanging_wall_id}) - will be driven during Phase 2")
+# Right Bottom (Movable Hanging Wall) - The Driver!
+hanging_wall = utils.box(
+    center=(5 + THICK/2, 0, -THICK/2), 
+    extents=(5 + THICK/2, 1 + THICK, THICK/2), 
+    fixed=False, # Must be False to allow movement
+    material=wall_mat, 
+    wire=False
+)
+# We append explicitly to get the ID
+hanging_wall_id = O.bodies.append(hanging_wall)
 
-# 3. Side Walls (Left/Right) - Keep Friction
-left_wall = utils.box(center=(-10, 0, 5), extents=(0, 1, 5), fixed=True, material=wall_mat)
+# ----------------------------------------------------------------------------
+# B. THE SIDES (Fixed)
+# ----------------------------------------------------------------------------
+# Left Wall
+left_wall = utils.box(
+    center=(-10 - THICK/2, 0, 5), 
+    extents=(THICK/2, 1 + THICK, 5 + THICK), 
+    fixed=True, 
+    material=wall_mat
+)
 O.bodies.append(left_wall)
 
-right_wall = utils.box(center=(10, 0, 5), extents=(0, 1, 5), fixed=True, material=wall_mat)
+# Right Wall
+right_wall = utils.box(
+    center=(10 + THICK/2, 0, 5), 
+    extents=(THICK/2, 1 + THICK, 5 + THICK), 
+    fixed=True, 
+    material=wall_mat
+)
 O.bodies.append(right_wall)
 
-# 4. Front/Back Walls - USE FRICTIONLESS MATERIAL
+# ----------------------------------------------------------------------------
+# C. FRONT & BACK (The "Glass" - Frictionless)
+# ----------------------------------------------------------------------------
 # Front Wall (y = -1)
-front_wall = utils.box(center=(0, -1, 5), extents=(10, 0, 5), fixed=True, material=frictionless_mat)
+front_wall = utils.box(
+    center=(0, -1 - THICK/2, 5), 
+    extents=(10 + THICK, THICK/2, 5), 
+    fixed=True, 
+    material=frictionless_mat # Frictionless!
+)
 O.bodies.append(front_wall)
 
 # Back Wall (y = +1)
-back_wall = utils.box(center=(0, 1, 5), extents=(10, 0, 5), fixed=True, material=frictionless_mat)
+back_wall = utils.box(
+    center=(0, 1 + THICK/2, 5), 
+    extents=(10 + THICK, THICK/2, 5), 
+    fixed=True, 
+    material=frictionless_mat # Frictionless!
+)
 O.bodies.append(back_wall)
 
-# Top Wall (z = 10)
-top_wall = utils.box(center=(0, 0, 10), extents=(10, 1, 0), fixed=True, material=wall_mat)
+# ----------------------------------------------------------------------------
+# D. TOP (Cap)
+# ----------------------------------------------------------------------------
+top_wall = utils.box(
+    center=(0, 0, 10 + THICK/2), 
+    extents=(10 + THICK, 1 + THICK, THICK/2), 
+    fixed=True, 
+    material=wall_mat
+)
 O.bodies.append(top_wall)
 
-print("Boundary walls created (Front/Back are frictionless for Plane Strain)")
-
+print("Boundary walls created: Sealed Split-Box (Thickness=0.2m)")
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
 # ============================================================================
-vtk_recorder = export.VTKRecorder(
+vtk_recorder = VTKRecorder(
     fileName='simulation_snapshots/3d_data-',
-    # include 'boxes' so walls are visible, and 'colors' for material coloring
     recorders=['spheres', 'boxes', 'velocity', 'stress', 'ids', 'colors'],
-    iterPeriod=2000,
+    iterPeriod=2000, 
     label='vtk_recorder'
 )
 
@@ -292,12 +339,13 @@ O.engines = [
     ),
 
     # Damping handles the energy dissipation
-    NewtonIntegrator(damping=0.7, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
+    NewtonIntegrator(damping=0.6, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
 
     # REMOVED TRIAXIAL CONTROLLER COMPLETELY - Gravity + Rigid Walls create natural stress state
 
     # Phase control callbacks (order matters!)
     PyRunner(command='checkGravityEquilibrium()', iterPeriod=1000, label='gravityCheck'),
+    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=1000, label='stiffnessRestore'),
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
     # Drive hanging wall every iteration when Phase 2 is active
     PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
@@ -431,18 +479,14 @@ def checkGravityEquilibrium():
                 print(f"  Properties: 10% cohesion, 50% friction reduction")
                 print(f"  Purpose: Seed localized shear rupture\n")
                 
-                # SKIP PHASE 1: go directly to Phase 2 (no stiffness restoration)
-                global phase2_active, hanging_wall_vel
-                # Configure hanging wall kinematics immediately
-                dip_angle = np.radians(60)
-                vel_mag = 1e-4
-                vel_x = vel_mag * np.cos(dip_angle)
-                vel_z = vel_mag * np.sin(dip_angle)
-                hanging_wall_vel = (-vel_x, 0.0, vel_z)
+                # Begin gradual stiffness restoration (avoids force explosion)
+                global phase1_active, phase1_start, phase2_active
+                phase1_active = True
+                phase1_start = O.iter
+                print(f"\n✓ Starting gradual stiffness restoration (5000 iterations)")
+                print(f"  This prevents force explosion from instantaneous stiffness change")
 
-                phase2_active = True
                 phase0_complete = True
-                print(f"\n✓ Bonds created. Weak zone established. Skipping Phase 1 -> Starting Phase 2")
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
