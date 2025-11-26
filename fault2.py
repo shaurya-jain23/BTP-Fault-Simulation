@@ -64,7 +64,7 @@ materials = []
 original_youngs = []  # Store original Young's modulus for gradual restoration
 
 # Stiffness reduction factor for Phase 0 settling (will be gradually restored after bonding)
-SETTLING_STIFFNESS_FACTOR = 0.001  # Use 0.1% of target stiffness during settling
+SETTLING_STIFFNESS_FACTOR = 1.0  # Use full stiffness from the start (no restoration needed)
 
 for i in range(10):
     if i % 2 == 0:
@@ -345,7 +345,7 @@ O.engines = [
 
     # Phase control callbacks (order matters!)
     PyRunner(command='checkGravityEquilibrium()', iterPeriod=1000, label='gravityCheck'),
-    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=1000, label='stiffnessRestore'),
+    # PyRunner(command='gradualStiffnessRestoration()', iterPeriod=1000, label='stiffnessRestore'),  # REMOVED: Using full stiffness from start
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
     # Drive hanging wall every iteration when Phase 2 is active
     PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
@@ -479,12 +479,30 @@ def checkGravityEquilibrium():
                 print(f"  Properties: 10% cohesion, 50% friction reduction")
                 print(f"  Purpose: Seed localized shear rupture\n")
                 
-                # Begin gradual stiffness restoration (avoids force explosion)
-                global phase1_active, phase1_start, phase2_active
-                phase1_active = True
-                phase1_start = O.iter
-                print(f"\n✓ Starting gradual stiffness restoration (5000 iterations)")
-                print(f"  This prevents force explosion from instantaneous stiffness change")
+                # --- SKIP STIFFNESS RESTORATION (Factor=1.0 used) ---
+                print("Skipping stiffness restoration (Factor=1.0 used).")
+                
+                # GO DIRECTLY TO PHASE 2
+                global phase2_active, hanging_wall_vel
+                phase2_active = True
+                phase1_complete = True  # Mark Phase 1 as complete even though we skipped restoration
+                
+                # Configure hanging wall velocity (UPDATED SPEED: 0.05 m/s)
+                dip_angle = np.radians(60)  # 60° thrust fault
+                vel_mag = 0.05  # m/s - Quasi-static driving velocity (500x faster than before)
+                vel_x = vel_mag * np.cos(dip_angle)
+                vel_z = vel_mag * np.sin(dip_angle)
+                hanging_wall_vel = (-vel_x, 0.0, vel_z)
+                
+                print(f"\n--- Starting PHASE 2: Kinematic Hanging Wall Drive (Thrust Mechanics) ---")
+                print(f"Loading mode: Kinematic wall movement (no servo control)")
+                print(f"  - Bottom footwall: FIXED (rigid basement)")
+                print(f"  - Hanging wall velocity: {vel_mag*1e3:.1f} mm/s at {60}° dip")
+                print(f"  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)")
+                print(f"  - Natural stress state from gravity + rigid walls")
+                print(f"  - Fault nucleation zone: Vertical plane at x=0")
+                print(f"→ Hanging wall will drive thrust rupture along weak zone")
+                print("="*70 + "\n")
 
                 phase0_complete = True
                 O.saveTmp('phase0_complete')
@@ -600,7 +618,8 @@ def checkFaultLoading():
         try:
             # Get hanging wall displacement
             hw_pos = O.bodies[hanging_wall_id].state.pos
-            hw_disp_x = hw_pos[0] - 5.0  # Initial position was x=5.0
+            # UPDATED FORMULA: Initial center position accounting for wall thickness
+            hw_disp_x = hw_pos[0] - 7.6  # Initial position was ~7.6m (7.5 + 0.1 half thickness)
             hw_disp_z = hw_pos[2] - 0.0  # Initial position was z=0.0
 
             # Count broken bonds
