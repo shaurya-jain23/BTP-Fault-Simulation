@@ -63,8 +63,8 @@ LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 materials = []
 original_youngs = []  # Store original Young's modulus for gradual restoration
 
-# Stiffness reduction factor for Phase 0 settling (will be gradually restored after bonding)
-SETTLING_STIFFNESS_FACTOR = 0.001  # Use 0.1% of target stiffness during settling
+# Stiffness reduction factor for Phase 0 settling (do not reduce: use full stiffness)
+SETTLING_STIFFNESS_FACTOR = 1.0  # Use full target stiffness during settling
 
 for i in range(10):
     if i % 2 == 0:
@@ -260,10 +260,11 @@ print("Boundary walls created (Front/Back are frictionless for Plane Strain)")
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
 # ============================================================================
-vtk_recorder = VTKRecorder(
+vtk_recorder = export.VTKRecorder(
     fileName='simulation_snapshots/3d_data-',
-    recorders=['spheres', 'velocity', 'stress', 'ids'], 
-    iterPeriod=2000, 
+    # include 'boxes' so walls are visible, and 'colors' for material coloring
+    recorders=['spheres', 'boxes', 'velocity', 'stress', 'ids', 'colors'],
+    iterPeriod=2000,
     label='vtk_recorder'
 )
 
@@ -291,13 +292,12 @@ O.engines = [
     ),
 
     # Damping handles the energy dissipation
-    NewtonIntegrator(damping=0.6, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
+    NewtonIntegrator(damping=0.7, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
 
     # REMOVED TRIAXIAL CONTROLLER COMPLETELY - Gravity + Rigid Walls create natural stress state
 
     # Phase control callbacks (order matters!)
     PyRunner(command='checkGravityEquilibrium()', iterPeriod=1000, label='gravityCheck'),
-    PyRunner(command='gradualStiffnessRestoration()', iterPeriod=1000, label='stiffnessRestore'),
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
     # Drive hanging wall every iteration when Phase 2 is active
     PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
@@ -431,14 +431,18 @@ def checkGravityEquilibrium():
                 print(f"  Properties: 10% cohesion, 50% friction reduction")
                 print(f"  Purpose: Seed localized shear rupture\n")
                 
-                # Begin gradual stiffness restoration (avoids force explosion)
-                global phase1_active, phase1_start, phase2_active
-                phase1_active = True
-                phase1_start = O.iter
-                print(f"\n✓ Starting gradual stiffness restoration (5000 iterations)")
-                print(f"  This prevents force explosion from instantaneous stiffness change")
+                # SKIP PHASE 1: go directly to Phase 2 (no stiffness restoration)
+                global phase2_active, hanging_wall_vel
+                # Configure hanging wall kinematics immediately
+                dip_angle = np.radians(60)
+                vel_mag = 1e-4
+                vel_x = vel_mag * np.cos(dip_angle)
+                vel_z = vel_mag * np.sin(dip_angle)
+                hanging_wall_vel = (-vel_x, 0.0, vel_z)
 
+                phase2_active = True
                 phase0_complete = True
+                print(f"\n✓ Bonds created. Weak zone established. Skipping Phase 1 -> Starting Phase 2")
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
