@@ -1,6 +1,6 @@
 Welcome to Yade 2022.01a
-Using python version: 3.10.12 (main, Aug 15 2025, 14:32:43) [GCC 11.4.0]
-TCP python prompt on localhost:9000, auth cookie `kcsuye'
+Using python version: 3.10.12 (main, Nov  4 2025, 08:48:33) [GCC 11.4.0]
+TCP python prompt on localhost:9000, auth cookie `cadesy'
 XMLRPC info provider on http://localhost:21000
 Running script fault2.py
 
@@ -60,9 +60,7 @@ Total particles generated: 60000
 Initial timestep (soft materials): 7.791066e-04 s
 (Will be recomputed after stiffness restoration)
 ----------------------------------------------------------------------
-Fixed footwall (ID: 60000) - simulates rigid basement
-Hanging wall (movable) found (ID: 60001) - will be driven during Phase 2
-Boundary walls created (Front/Back are frictionless for Plane Strain)
+Boundary walls created: Sealed Split-Box (Thickness=0.2m)
 
 ======================================================================
 STARTING SIMULATION - 10-LAYER STRATIGRAPHIC MODEL
@@ -84,50 +82,28 @@ Starting Phase 0: Gravity Deposition...
 
 [[ ^L clears screen, ^U kills line. F8 plot. ]]
 
-Phase 0 (Settling): Iteration   1000 | Unbalanced: 0.6554 | KE: 1.25e+06 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.6768 | KE: 3.27e+06 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.2397 | KE: 4.56e+06 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.1984 | KE: 8.68e+06 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.1984 | KE: 1.43e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.2001 | KE: 2.15e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.2021 | KE: 3.03e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.2040 | KE: 4.07e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.2063 | KE: 5.26e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  10000 | Unbalanced: 0.2078 | KE: 6.62e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  11000 | Unbalanced: 0.2093 | KE: 8.15e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  12000 | Unbalanced: 0.2105 | KE: 9.84e+07 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  13000 | Unbalanced: 0.2115 | KE: 1.17e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  14000 | Unbalanced: 0.2127 | KE: 1.37e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  15000 | Unbalanced: 0.2132 | KE: 1.59e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  16000 | Unbalanced: 0.2139 | KE: 1.83e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  17000 | Unbalanced: 0.2147 | KE: 2.08e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  18000 | Unbalanced: 0.2155 | KE: 2.35e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  19000 | Unbalanced: 0.2168 | KE: 2.63e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  20000 | Unbalanced: 0.2170 | KE: 2.94e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  21000 | Unbalanced: 0.2178 | KE: 3.26e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  22000 | Unbalanced: 0.2180 | KE: 3.60e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  23000 | Unbalanced: 0.2185 | KE: 3.95e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  24000 | Unbalanced: 0.2192 | KE: 4.32e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  25000 | Unbalanced: 0.2190 | KE: 4.71e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  26000 | Unbalanced: 0.2195 | KE: 5.12e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  27000 | Unbalanced: 0.2200 | KE: 5.54e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  28000 | Unbalanced: 0.2204 | KE: 5.98e+08 (targets: 0.0100, <500)
-Phase 0 (Settling): Iteration  29000 | Unbalanced: 0.2208 | KE: 6.44e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   1000 | Unbalanced: 0.5667 | KE: 8.42e+05 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.6471 | KE: 1.51e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.0912 | KE: 3.57e+03 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.0110 | KE: 4.31e+02 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.0016 | KE: 7.68e+00 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.0003 | KE: 5.82e-01 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.0001 | KE: 1.25e-01 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.0000 | KE: 1.42e-02 (targets: 0.0100, <500)
 
 ======================================================================
 PHASE 0 COMPLETE: Gravity Settling
 ======================================================================
-Iteration: 30000
-Unbalanced force: 0.221468
-Kinetic energy: 6.916301e+08
-(Forced completion due to timeout)
+Iteration: 9000
+Unbalanced force: 0.000006
+Kinetic energy: 4.445805e-03
 
 Particles have settled under gravity.
 
 --- Starting PHASE 1: Bond Creation + Weak Zone ---
-✓ Created 100611 cohesive bonds
+✓ Created 285724 cohesive bonds
 ✓ Enabled bonding for new contacts (crack healing allowed)
-✓ Created FAULT NUCLEATION ZONE: 1661 bonds modified
+✓ Created FAULT NUCLEATION ZONE: 29093 bonds modified
   Location: Vertical plane at x=0 (±1m width)
   Properties: 10% cohesion, 50% friction reduction
   Purpose: Seed localized shear rupture
@@ -135,7 +111,7 @@ Particles have settled under gravity.
 
 ✓ Starting gradual stiffness restoration (5000 iterations)
   This prevents force explosion from instantaneous stiffness change
-Phase 0 (Settling): Iteration  30000 | Unbalanced: 0.2215 | KE: 6.92e+08 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.0000 | KE: 4.45e-03 (targets: 0.0100, <500)
 Phase 1: Stiffness Restoration Step 3/10 | Young's at 30% | dt: 4.498174e-05 s
 Phase 1: Stiffness Restoration Step 5/10 | Young's at 50% | dt: 3.484271e-05 s
 Phase 1: Stiffness Restoration Step 7/10 | Young's at 70% | dt: 2.944746e-05 s
@@ -156,3 +132,195 @@ Loading mode: Kinematic wall movement (no servo control)
   - Fault nucleation zone: Vertical plane at x=0
 → Hanging wall will drive thrust rupture along weak zone
 ======================================================================
+
+In [1]: <FATAL ERROR> ThreadRunner:35 void yade::ThreadRunner::run(): Exception occured:
+PyRunner error.
+
+COMMAND: 'gradualStiffnessRestoration()'
+
+ERROR:
+Python argument types in
+    BodyContainer.__getitem__(BodyContainer, NoneType)
+did not match C++ signature:
+    __getitem__(yade::pyBodyContainer {lvalue}, int)
+
+STACK TRACE:
+Traceback (most recent call last):
+
+  File "<string>", line 1, in <module>
+
+  File "fault2.py", line 578, in gradualStiffnessRestoration
+    hw_body = O.bodies[hanging_wall_id]
+
+Boost.Python.ArgumentError: Python argument types in
+    BodyContainer.__getitem__(BodyContainer, NoneType)
+did not match C++ signature:
+    __getitem__(yade::pyBodyContainer {lvalue}, int)
+---------------------------------------------------------------------------
+ArgumentError                             Traceback (most recent call last)
+/usr/bin/yade in <module>
+
+/usr/bin/yade in gradualStiffnessRestoration()
+    576         print("="*70 + "\n")
+    577
+--> 578         hw_body = O.bodies[hanging_wall_id]
+    579         hw_body.state.blockedDOFs = 'XYZ'
+    580         phase2_active = True
+
+ArgumentError: Python argument types in
+    BodyContainer.__getitem__(BodyContainer, NoneType)
+did not match C++ signature:
+    __getitem__(yade::pyBodyContainer {lvalue}, int)
+In [1]: exit
+
+aeroclubiitg@DESKTOP-H09G5DG:~/BTP-Fault-Simulation$ yade -n -j 6 fault2.py
+Welcome to Yade 2022.01a
+Using python version: 3.10.12 (main, Nov  4 2025, 08:48:33) [GCC 11.4.0]
+TCP python prompt on localhost:9000, auth cookie `cysdsu'
+XMLRPC info provider on http://localhost:21000
+Running script fault2.py
+
+======================================================================
+QUASI-3D SLICE GEOMETRY (Computational Efficiency)
+======================================================================
+Domain: 20m (width) × 2m (thickness) × 10m (height)
+Volume: 400 m³
+Expected packing fraction: ~60-65% (realistic rock mass)
+======================================================================
+
+
+--- Material Properties Summary ---
+Total layers: 10
+Sandstone layers: 0, 2, 4, 6, 8 (Target Young's: 100-125 MPa)
+Shale layers: 1, 3, 5, 7, 9 (Target Young's: 100-125 MPa)
+Average density: 2500 kg/m³
+
+⚠️  Phase 0 uses reduced stiffness (factor: 0.001)
+   Stiffness will be GRADUALLY restored after bonding to avoid force explosion
+----------------------------------------------------------------------
+
+--- Calculated Stress State at 10m Depth ---
+Lithostatic vertical stress: 0.25 MPa
+K0 coefficient: 0.475
+Horizontal confining stress: 0.12 MPa
+Stress ratio (σh/σv): 0.475
+Fault loading stress (Phase 2): 0.44 MPa
+----------------------------------------------------------------------
+
+--- Generating 10-Layer Particle Packing ---
+Layer 0 (Sandstone): 6000 particles | Z-range: [0.0, 1.0] m | r=0.07m
+Layer 1 (Shale): 6000 particles | Z-range: [1.0, 2.0] m | r=0.07m
+Layer 2 (Sandstone): 6000 particles | Z-range: [2.0, 3.0] m | r=0.07m
+Layer 3 (Shale): 6000 particles | Z-range: [3.0, 4.0] m | r=0.07m
+Layer 4 (Sandstone): 6000 particles | Z-range: [4.0, 5.0] m | r=0.07m
+Layer 5 (Shale): 6000 particles | Z-range: [5.0, 6.0] m | r=0.07m
+Layer 6 (Sandstone): 6000 particles | Z-range: [6.0, 7.0] m | r=0.07m
+Layer 7 (Shale): 6000 particles | Z-range: [7.0, 8.0] m | r=0.07m
+Layer 8 (Sandstone): 6000 particles | Z-range: [8.0, 9.0] m | r=0.07m
+Layer 9 (Shale): 6000 particles | Z-range: [9.0, 10.0] m | r=0.07m
+
+--- Particle Distribution Summary ---
+Layer 0 (Sandstone): 6000 particles
+Layer 1 (Shale): 6000 particles
+Layer 2 (Sandstone): 6000 particles
+Layer 3 (Shale): 6000 particles
+Layer 4 (Sandstone): 6000 particles
+Layer 5 (Shale): 6000 particles
+Layer 6 (Sandstone): 6000 particles
+Layer 7 (Shale): 6000 particles
+Layer 8 (Sandstone): 6000 particles
+Layer 9 (Shale): 6000 particles
+Total particles generated: 60000
+----------------------------------------------------------------------
+
+Initial timestep (soft materials): 7.791066e-04 s
+(Will be recomputed after stiffness restoration)
+----------------------------------------------------------------------
+Boundary walls created: Sealed Split-Box (Extended Hanging Wall)
+
+======================================================================
+STARTING SIMULATION - 10-LAYER STRATIGRAPHIC MODEL
+======================================================================
+Total particles: 60000 (6000 per layer × 10 layers)
+Domain: (-10, 10, -1, 1, 0, 10)
+Burial depth: 10 m
+Layer structure: 5 Sandstone + 5 Shale (alternating)
+Particle radius: 0.07 m (high resolution)
+
+PHASE WORKFLOW:
+ Phase 0: Gravity deposition (target: unbalanced force < 0.01)
+ Phase 1: Bond formation + stiffness restoration (100 MPa target)
+ Phase 2: Kinematic hanging wall drive (thrust fault)
+======================================================================
+
+Starting Phase 0: Gravity Deposition...
+(Particles will settle under gravity before bonding)
+
+[[ ^L clears screen, ^U kills line. F8 plot. ]]
+
+Phase 0 (Settling): Iteration   1000 | Unbalanced: 0.5667 | KE: 8.42e+05 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.6471 | KE: 1.51e+06 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.0912 | KE: 3.57e+03 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.0110 | KE: 4.31e+02 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.0017 | KE: 6.61e+00 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.0003 | KE: 3.54e-01 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.0001 | KE: 2.39e-01 (targets: 0.0100, <500)
+Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.0000 | KE: 4.99e-03 (targets: 0.0100, <500)
+
+======================================================================
+PHASE 0 COMPLETE: Gravity Settling
+======================================================================
+Iteration: 9000
+Unbalanced force: 0.000005
+Kinetic energy: 6.736763e-03
+
+Particles have settled under gravity.
+
+--- Starting PHASE 1: Bond Creation + Weak Zone ---
+✓ Created 285697 cohesive bonds
+✓ Enabled bonding for new contacts (crack healing allowed)
+✓ Created FAULT NUCLEATION ZONE: 29089 bonds modified
+  Location: Vertical plane at x=0 (±1m width)
+  Properties: 10% cohesion, 50% friction reduction
+  Purpose: Seed localized shear rupture
+
+
+✓ Starting gradual stiffness restoration (5000 iterations)
+  This prevents force explosion from instantaneous stiffness change
+Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.0000 | KE: 6.74e-03 (targets: 0.0100, <500)
+Phase 1: Stiffness Restoration Step 3/10 | Young's at 30% | dt: 4.498174e-05 s
+Phase 1: Stiffness Restoration Step 5/10 | Young's at 50% | dt: 3.484271e-05 s
+Phase 1: Stiffness Restoration Step 7/10 | Young's at 70% | dt: 2.944746e-05 s
+Phase 1: Stiffness Restoration Step 9/10 | Young's at 90% | dt: 2.597022e-05 s
+
+======================================================================
+PHASE 1 COMPLETE: Bonding + Stiffness Restoration
+======================================================================
+Young's modulus restored to target values (100-125 MPa)
+Timestep: 3.695627e-05 s (0.15×PWave, conservative) | Damping: 0.3
+
+--- Starting PHASE 2: Kinematic Hanging Wall Drive (Thrust Mechanics) ---
+Loading mode: Kinematic wall movement (no servo control)
+  - Bottom footwall: FIXED (rigid basement)
+  - Hanging wall velocity: 100.0 μm/s at 60° dip
+  - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)
+  - Natural stress state from gravity + rigid walls
+  - Fault nucleation zone: Vertical plane at x=0
+→ Hanging wall will drive thrust rupture along weak zone
+======================================================================
+
+Phase 2 (Fault Loading): Iteration  14000 | HW disp: X=2.600m, Z=-0.100m | Broken bonds = 88409 (30.9%)
+Phase 2 (Fault Loading): Iteration  16000 | HW disp: X=2.600m, Z=-0.100m | Broken bonds = 40533 (14.2%)
+Phase 2 (Fault Loading): Iteration  18000 | HW disp: X=2.600m, Z=-0.100m | Broken bonds = 32071 (11.2%)
+Phase 2 (Fault Loading): Iteration  20000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30564 (10.7%)
+Phase 2 (Fault Loading): Iteration  22000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30323 (10.6%)
+Phase 2 (Fault Loading): Iteration  24000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30329 (10.6%)
+Phase 2 (Fault Loading): Iteration  26000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30363 (10.6%)
+Phase 2 (Fault Loading): Iteration  28000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30377 (10.6%)
+Phase 2 (Fault Loading): Iteration  30000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30391 (10.6%)
+Phase 2 (Fault Loading): Iteration  32000 | HW disp: X=2.600m, Z=-0.101m | Broken bonds = 30394 (10.6%)
+Phase 2 (Fault Loading): Iteration  34000 | HW disp: X=2.600m, Z=-0.102m | Broken bonds = 30398 (10.6%)
+Phase 2 (Fault Loading): Iteration  36000 | HW disp: X=2.600m, Z=-0.102m | Broken bonds = 30397 (10.6%)
+Phase 2 (Fault Loading): Iteration  38000 | HW disp: X=2.600m, Z=-0.102m | Broken bonds = 30396 (10.6%)
+Phase 2 (Fault Loading): Iteration  40000 | HW disp: X=2.600m, Z=-0.102m | Broken bonds = 30402 (10.6%)
+Phase 2 (Fault Loading): Iteration  42000 | HW disp: X=2.600m, Z=-0.102m | Broken bonds = 30401 (10.6%)

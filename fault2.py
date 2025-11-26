@@ -209,47 +209,47 @@ O.dt = 0.1 * PWaveTimeStep()  # Use 0.1× (not 0.2×) for extra stability with s
 print(f"\nInitial timestep (soft materials): {O.dt:.6e} s")
 print("(Will be recomputed after stiffness restoration)")
 print("-" * 70)
-
 # ============================================================================
-# SECTION 5: BOUNDARY WALLS (Sealed Split-Box with Thickness)
+# SECTION 5: BOUNDARY WALLS (Leak-Proof Extended Design)
 # ============================================================================
 
-# 1. Define materials
-# High Friction for Top/Bottom/Sides (Sandstone-like)
+# Define materials
 wall_mat = materials[0] 
-
 # Frictionless for Front/Back (Simulates infinite Plane Strain)
 frictionless_mat = CohFrictMat(
     young=1e8, poisson=0.3, frictionAngle=0, density=0, label='frictionless'
 )
 O.materials.append(frictionless_mat)
 
-# Wall thickness to prevent tunneling/visual gaps
+# Wall thickness to prevent tunneling
 THICK = 0.2 
 
 # ----------------------------------------------------------------------------
 # A. THE BOTTOM (Split into Footwall and Hanging Wall)
 # ----------------------------------------------------------------------------
-# Left Bottom (Fixed Footwall)
+# Left Bottom (Fixed Footwall) - Range: x = -10 to 0
 footwall = utils.box(
-    center=(-5 - THICK/2, 0, -THICK/2),  # Shifted to keep inner surface at z=0
-    extents=(5 + THICK/2, 1 + THICK, THICK/2), # Overlap corners
+    center=(-5 - THICK/2, 0, -THICK/2),  
+    extents=(5 + THICK/2, 1 + THICK, THICK/2), 
     fixed=True, 
     material=wall_mat, 
     wire=False
 )
 footwall_id = O.bodies.append(footwall)
 
-# Right Bottom (Movable Hanging Wall) - The Driver!
+# Right Bottom (Movable Hanging Wall) - Range: x = 0 to 15 (EXTRA LONG!)
+# We make it 15m long so when it moves left by 3m, it still covers the x=10 boundary.
 hanging_wall = utils.box(
-    center=(5 + THICK/2, 0, -THICK/2), 
-    extents=(5 + THICK/2, 1 + THICK, THICK/2), 
+    center=(7.5 + THICK/2, 0, -THICK/2), # Center shifted to cover 0 to 15
+    extents=(7.5 + THICK/2, 1 + THICK, THICK/2), # Half-width is 7.5m
     fixed=False, # Must be False to allow movement
     material=wall_mat, 
     wire=False
 )
+
 # We append explicitly to get the ID
-hanging_wall_id = O.bodies.append(hanging_wall)
+hanging_wall.state.blockedDOFs = 'xyzXYZ'
+hanging_wall_id = O.bodies.append(hanging_wall) # <--- ID SAVED HERE
 
 # ----------------------------------------------------------------------------
 # B. THE SIDES (Fixed)
@@ -280,7 +280,7 @@ front_wall = utils.box(
     center=(0, -1 - THICK/2, 5), 
     extents=(10 + THICK, THICK/2, 5), 
     fixed=True, 
-    material=frictionless_mat # Frictionless!
+    material=frictionless_mat 
 )
 O.bodies.append(front_wall)
 
@@ -289,7 +289,7 @@ back_wall = utils.box(
     center=(0, 1 + THICK/2, 5), 
     extents=(10 + THICK, THICK/2, 5), 
     fixed=True, 
-    material=frictionless_mat # Frictionless!
+    material=frictionless_mat 
 )
 O.bodies.append(back_wall)
 
@@ -304,7 +304,7 @@ top_wall = utils.box(
 )
 O.bodies.append(top_wall)
 
-print("Boundary walls created: Sealed Split-Box (Thickness=0.2m)")
+print("Boundary walls created: Sealed Split-Box (Extended Hanging Wall)")
 # ============================================================================
 # SECTION 6: SIMULATION ENGINES (Corrected for three-phase workflow)
 # ============================================================================
@@ -389,7 +389,7 @@ simulation_stopped = False
 brokenBonds = 0
 total_bonds = 0
 # Hanging wall id for kinematic driver (set when walls are created)
-hanging_wall_id = None
+# hanging_wall_id = None
 # Hanging wall velocity vector (set at Phase 2 start)
 hanging_wall_vel = (0.0, 0.0, 0.0)
 
@@ -574,6 +574,8 @@ def gradualStiffnessRestoration():
         print(f"→ Hanging wall will drive thrust rupture along weak zone")
         print("="*70 + "\n")
         
+        hw_body = O.bodies[hanging_wall_id]
+        hw_body.state.blockedDOFs = 'XYZ'
         phase2_active = True
         phase1_complete = True
         phase1_active = False
