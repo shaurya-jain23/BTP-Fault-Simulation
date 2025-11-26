@@ -339,7 +339,7 @@ O.engines = [
     ),
 
     # Damping handles the energy dissipation
-    NewtonIntegrator(damping=0.6, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
+    NewtonIntegrator(damping=0.7, gravity=(0, 0, -9.81)),  # Increased damping for Phase 0
 
     # REMOVED TRIAXIAL CONTROLLER COMPLETELY - Gravity + Rigid Walls create natural stress state
 
@@ -413,13 +413,13 @@ def checkGravityEquilibrium():
 
         # Use relaxed equilibration criterion:
         # - target unbalanced force < 0.01 (with reduced stiffness, should settle faster)
-        # - kinetic energy < 500 (realistic for 4000 particles with soft materials)
-        # - minimum iterations before checking: 8000 (reduced from 10000)
-        # - forced timeout: 30000 iterations (reduced from 35000)
-        min_iters = 8000
-        timeout_iters = 30000
+        # - kinetic energy < 1 (realistic for 6000 particles with soft materials)
+        # - minimum iterations before checking: 20000 (reduced from 10000)
+        # - forced timeout: 90000 iterations (reduced from 35000)
+        min_iters = 20000
+        timeout_iters = 90000
         target_unbalanced = 0.01  # Stricter with softer materials
-        target_ke = 500.0  # Kinetic energy threshold (relaxed for large system)
+        target_ke = 1.0  # Kinetic energy threshold (relaxed for large system)
 
         # Monitor kinetic energy for additional insight
         ke = utils.kineticEnergy()
@@ -508,7 +508,7 @@ def checkGravityEquilibrium():
                 O.saveTmp('phase0_complete')
 
         # Progress updates during settling
-        if O.iter % 100 == 0:
+        if O.iter % 1000 == 0:
             print(f"Phase 0 (Settling): Iteration {O.iter:6d} | Unbalanced: {unbalanced:.4f} | KE: {ke:.2e} (targets: {target_unbalanced:.4f}, <{target_ke:.0f})")
 
 # ============================================================================
@@ -656,19 +656,6 @@ def checkFaultLoading():
         except Exception as e:
             pass  # Data not available yet
 
-def driveHangingWall():
-    """Set hanging wall velocity every iteration during Phase 2."""
-    global hanging_wall_id, hanging_wall_vel
-    if phase2_active and not simulation_stopped and hanging_wall_id is not None:
-        try:
-            body = O.bodies[hanging_wall_id]
-            body.state.vel = hanging_wall_vel
-            
-            # UPDATED: Block Rotations (XYZ) so the wall stays flat, 
-            # but allow Translations (xyz) to be driven by velocity
-            body.state.blockedDOFs = 'XYZ'
-        except Exception:
-            pass
 
 def stopSimulation():
     """Clean shutdown with data export"""
