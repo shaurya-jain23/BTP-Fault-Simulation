@@ -1,9 +1,3 @@
-Welcome to Yade 2022.01a
-Using python version: 3.10.12 (main, Nov  4 2025, 08:48:33) [GCC 11.4.0]
-TCP python prompt on localhost:9000, auth cookie `ukeays'
-XMLRPC info provider on http://localhost:21000
-Running script fault2.py
-
 ======================================================================
 QUASI-3D SLICE GEOMETRY (Computational Efficiency)
 ======================================================================
@@ -12,6 +6,12 @@ Volume: 400 m³
 Expected packing fraction: ~60-65% (realistic rock mass)
 ======================================================================
 
+
+--- Breakable Clump Configuration ---
+Fault Core Zone: x ∈ [-2.0, 2.0] m
+Clump member radius ratio: 0.4
+Breakage force threshold: 50.0 kN
+----------------------------------------------------------------------
 
 --- Material Properties Summary ---
 Total layers: 10
@@ -43,21 +43,32 @@ Layer 7 (Shale): 6000 particles | Z-range: [7.0, 8.0] m | r=0.07m
 Layer 8 (Sandstone): 6000 particles | Z-range: [8.0, 9.0] m | r=0.07m
 Layer 9 (Shale): 6000 particles | Z-range: [9.0, 10.0] m | r=0.07m
 
+--- Adaptive Zone Refinement ---
+Fault Core Zone (x ∈ [-2.0, 2.0]): Breakable Clumps
+Passive Rock (outside zone): Standard Spheres
+
 --- Particle Distribution Summary ---
-Layer 0 (Sandstone): 6000 particles
-Layer 1 (Shale): 6000 particles
-Layer 2 (Sandstone): 6000 particles
-Layer 3 (Shale): 6000 particles
-Layer 4 (Sandstone): 6000 particles
-Layer 5 (Shale): 6000 particles
-Layer 6 (Sandstone): 6000 particles
-Layer 7 (Shale): 6000 particles
-Layer 8 (Sandstone): 6000 particles
-Layer 9 (Shale): 6000 particles
-Total particles generated: 60000
+Layer    Type         Clumps     Spheres    Total
+--------------------------------------------------
+0        Sandstone    1253       4747       6000
+1        Shale        1222       4778       6000
+2        Sandstone    1197       4803       6000
+3        Shale        1200       4800       6000
+4        Sandstone    1223       4777       6000
+5        Shale        1235       4765       6000
+6        Sandstone    1176       4824       6000
+7        Shale        1204       4796       6000
+8        Sandstone    1222       4778       6000
+9        Shale        1180       4820       6000
+--------------------------------------------------
+TOTAL                 12112      47888      60000
+
+Breakable clumps in fault zone: 12112
+Standard spheres (passive rock): 47888
+Clump IDs tracked: 12112
 ----------------------------------------------------------------------
 
-Initial timestep (soft materials): 2.463751e-05 s
+Initial timestep (soft materials): 9.857324e-06 s
 (Will be recomputed after stiffness restoration)
 ----------------------------------------------------------------------
 Boundary walls created: Sealed Split-Box (Extended Hanging Wall)
@@ -72,9 +83,14 @@ Layer structure: 5 Sandstone + 5 Shale (alternating)
 Particle radius: 0.07 m (high resolution)
 
 PHASE WORKFLOW:
- Phase 0: Gravity deposition (target: unbalanced force < 0.01)
+ Phase 0: Gravity deposition (target: unbalanced force < 0.05)
  Phase 1: Bond formation + stiffness restoration (100 MPa target)
  Phase 2: Kinematic hanging wall drive (thrust fault)
+
+BREAKABLE CLUMPS:
+ Fault Core Zone: x ∈ [-2.0, 2.0] m
+ Clumps tracked: 12112
+ Breakage threshold: 50.0 kN
 ======================================================================
 
 Starting Phase 0: Gravity Deposition...
@@ -82,110 +98,113 @@ Starting Phase 0: Gravity Deposition...
 
 [[ ^L clears screen, ^U kills line. F8 plot. ]]
 
-Phase 0 (Settling): Iteration   1000 | Unbalanced: 0.4242 | KE: 5.80e+02 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.4987 | KE: 2.32e+03 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.5033 | KE: 5.21e+03 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.4697 | KE: 9.24e+03 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.4036 | KE: 1.44e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.2688 | KE: 2.07e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.2749 | KE: 2.81e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.2354 | KE: 3.65e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.3050 | KE: 4.60e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  10000 | Unbalanced: 0.2149 | KE: 5.65e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  11000 | Unbalanced: 0.2333 | KE: 6.80e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  12000 | Unbalanced: 0.2712 | KE: 8.03e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  13000 | Unbalanced: 0.2323 | KE: 9.36e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  14000 | Unbalanced: 0.2480 | KE: 1.08e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  15000 | Unbalanced: 0.2860 | KE: 1.23e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  16000 | Unbalanced: 0.2754 | KE: 1.38e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  17000 | Unbalanced: 0.3046 | KE: 1.55e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  18000 | Unbalanced: 0.3023 | KE: 1.72e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  19000 | Unbalanced: 0.3334 | KE: 1.90e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  20000 | Unbalanced: 0.3210 | KE: 2.09e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  21000 | Unbalanced: 0.3342 | KE: 2.29e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  22000 | Unbalanced: 0.3019 | KE: 2.48e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  23000 | Unbalanced: 0.3140 | KE: 2.68e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  24000 | Unbalanced: 0.2905 | KE: 2.87e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  25000 | Unbalanced: 0.3051 | KE: 3.06e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  26000 | Unbalanced: 0.3100 | KE: 3.25e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  27000 | Unbalanced: 0.3456 | KE: 3.45e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  28000 | Unbalanced: 0.3231 | KE: 3.66e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  29000 | Unbalanced: 0.3151 | KE: 3.85e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  30000 | Unbalanced: 0.3151 | KE: 4.04e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  31000 | Unbalanced: 0.3400 | KE: 4.21e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  32000 | Unbalanced: 0.3249 | KE: 4.38e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  33000 | Unbalanced: 0.3426 | KE: 4.55e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  34000 | Unbalanced: 0.3446 | KE: 4.71e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  35000 | Unbalanced: 0.3374 | KE: 4.84e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  36000 | Unbalanced: 0.3476 | KE: 4.96e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  37000 | Unbalanced: 0.3475 | KE: 5.06e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  38000 | Unbalanced: 0.3544 | KE: 5.16e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  39000 | Unbalanced: 0.3590 | KE: 5.24e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  40000 | Unbalanced: 0.3584 | KE: 5.29e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  41000 | Unbalanced: 0.3597 | KE: 5.32e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  42000 | Unbalanced: 0.3728 | KE: 5.34e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  43000 | Unbalanced: 0.3673 | KE: 5.32e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  44000 | Unbalanced: 0.3749 | KE: 5.25e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  45000 | Unbalanced: 0.3853 | KE: 5.17e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  46000 | Unbalanced: 0.3803 | KE: 5.08e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  47000 | Unbalanced: 0.3854 | KE: 4.94e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  48000 | Unbalanced: 0.3908 | KE: 4.77e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  49000 | Unbalanced: 0.4024 | KE: 4.58e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  50000 | Unbalanced: 0.4010 | KE: 4.33e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  51000 | Unbalanced: 0.4040 | KE: 4.02e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  52000 | Unbalanced: 0.4102 | KE: 3.68e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  53000 | Unbalanced: 0.4202 | KE: 3.28e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  54000 | Unbalanced: 0.4211 | KE: 2.81e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  55000 | Unbalanced: 0.4223 | KE: 2.33e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  56000 | Unbalanced: 0.4294 | KE: 1.78e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  57000 | Unbalanced: 0.4272 | KE: 1.24e+05 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  58000 | Unbalanced: 0.4278 | KE: 8.26e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  59000 | Unbalanced: 0.4248 | KE: 6.45e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  60000 | Unbalanced: 0.4196 | KE: 5.87e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  61000 | Unbalanced: 0.4110 | KE: 5.69e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  62000 | Unbalanced: 0.4157 | KE: 5.65e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  63000 | Unbalanced: 0.4085 | KE: 5.68e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  64000 | Unbalanced: 0.4105 | KE: 5.76e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  65000 | Unbalanced: 0.4028 | KE: 5.84e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  66000 | Unbalanced: 0.4076 | KE: 5.95e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  67000 | Unbalanced: 0.4017 | KE: 6.06e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  68000 | Unbalanced: 0.4051 | KE: 6.19e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  69000 | Unbalanced: 0.4037 | KE: 6.29e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  70000 | Unbalanced: 0.3967 | KE: 6.41e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  71000 | Unbalanced: 0.3988 | KE: 6.52e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  72000 | Unbalanced: 0.4001 | KE: 6.59e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  73000 | Unbalanced: 0.4020 | KE: 6.65e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  74000 | Unbalanced: 0.3957 | KE: 6.68e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  75000 | Unbalanced: 0.3937 | KE: 6.71e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  76000 | Unbalanced: 0.3860 | KE: 6.71e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  77000 | Unbalanced: 0.3967 | KE: 6.67e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  78000 | Unbalanced: 0.3786 | KE: 6.63e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  79000 | Unbalanced: 0.3842 | KE: 6.60e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  80000 | Unbalanced: 0.3903 | KE: 6.54e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  81000 | Unbalanced: 0.3839 | KE: 6.45e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  82000 | Unbalanced: 0.3818 | KE: 6.35e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  83000 | Unbalanced: 0.3763 | KE: 6.25e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  84000 | Unbalanced: 0.3691 | KE: 6.16e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  85000 | Unbalanced: 0.3721 | KE: 6.01e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  86000 | Unbalanced: 0.3812 | KE: 5.91e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  87000 | Unbalanced: 0.3762 | KE: 5.81e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  88000 | Unbalanced: 0.3691 | KE: 5.70e+04 (targets: 0.0100, <1)
-Phase 0 (Settling): Iteration  89000 | Unbalanced: 0.3607 | KE: 5.60e+04 (targets: 0.0100, <1)
+Phase 0 (Settling): Iteration   1000 | Unbalanced: 2.1407 | KE: 8.35e+01 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   2000 | Unbalanced: 0.6410 | KE: 3.33e+02 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   3000 | Unbalanced: 0.2823 | KE: 7.50e+02 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   4000 | Unbalanced: 0.4880 | KE: 1.33e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   5000 | Unbalanced: 0.4736 | KE: 2.08e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   6000 | Unbalanced: 0.4498 | KE: 3.00e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   7000 | Unbalanced: 0.4713 | KE: 4.08e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   8000 | Unbalanced: 0.5884 | KE: 5.32e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration   9000 | Unbalanced: 0.4240 | KE: 6.73e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  10000 | Unbalanced: 0.4442 | KE: 8.31e+03 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  11000 | Unbalanced: 0.3696 | KE: 1.00e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  12000 | Unbalanced: 0.4247 | KE: 1.19e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  13000 | Unbalanced: 0.3418 | KE: 1.40e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  14000 | Unbalanced: 0.3541 | KE: 1.62e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  15000 | Unbalanced: 0.2585 | KE: 1.86e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  16000 | Unbalanced: 0.2738 | KE: 2.12e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  17000 | Unbalanced: 0.2550 | KE: 2.38e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  18000 | Unbalanced: 0.3205 | KE: 2.67e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  19000 | Unbalanced: 0.2812 | KE: 2.97e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  20000 | Unbalanced: 0.2495 | KE: 3.29e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  21000 | Unbalanced: 0.2861 | KE: 3.62e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  22000 | Unbalanced: 0.2747 | KE: 3.96e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  23000 | Unbalanced: 0.3214 | KE: 4.33e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  24000 | Unbalanced: 0.2270 | KE: 4.71e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  25000 | Unbalanced: 0.2048 | KE: 5.10e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  26000 | Unbalanced: 0.2656 | KE: 5.50e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  27000 | Unbalanced: 0.2433 | KE: 5.92e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  28000 | Unbalanced: 0.2357 | KE: 6.35e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  29000 | Unbalanced: 0.2146 | KE: 6.80e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  30000 | Unbalanced: 0.2062 | KE: 7.26e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  31000 | Unbalanced: 0.2587 | KE: 7.74e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  32000 | Unbalanced: 0.2011 | KE: 8.22e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  33000 | Unbalanced: 0.2504 | KE: 8.72e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  34000 | Unbalanced: 0.2037 | KE: 9.24e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  35000 | Unbalanced: 0.2237 | KE: 9.76e+04 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  36000 | Unbalanced: 0.2188 | KE: 1.03e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  37000 | Unbalanced: 0.1936 | KE: 1.08e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  38000 | Unbalanced: 0.1994 | KE: 1.14e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  39000 | Unbalanced: 0.1854 | KE: 1.20e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  40000 | Unbalanced: 0.2148 | KE: 1.26e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  41000 | Unbalanced: 0.1896 | KE: 1.32e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  42000 | Unbalanced: 0.2133 | KE: 1.38e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  43000 | Unbalanced: 0.2367 | KE: 1.44e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  44000 | Unbalanced: 0.2228 | KE: 1.50e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  45000 | Unbalanced: 0.2182 | KE: 1.57e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  46000 | Unbalanced: 0.2238 | KE: 1.63e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  47000 | Unbalanced: 0.2080 | KE: 1.70e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  48000 | Unbalanced: 0.2103 | KE: 1.77e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  49000 | Unbalanced: 0.2222 | KE: 1.84e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  50000 | Unbalanced: 0.2140 | KE: 1.91e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  51000 | Unbalanced: 0.2282 | KE: 1.98e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  52000 | Unbalanced: 0.2237 | KE: 2.05e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  53000 | Unbalanced: 0.2087 | KE: 2.13e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  54000 | Unbalanced: 0.2333 | KE: 2.20e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  55000 | Unbalanced: 0.2222 | KE: 2.27e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  56000 | Unbalanced: 0.2234 | KE: 2.35e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  57000 | Unbalanced: 0.2137 | KE: 2.42e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  58000 | Unbalanced: 0.2111 | KE: 2.50e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  59000 | Unbalanced: 0.2263 | KE: 2.57e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  60000 | Unbalanced: 0.2395 | KE: 2.64e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  61000 | Unbalanced: 0.2154 | KE: 2.72e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  62000 | Unbalanced: 0.2239 | KE: 2.79e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  63000 | Unbalanced: 0.2147 | KE: 2.87e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  64000 | Unbalanced: 0.2160 | KE: 2.94e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  65000 | Unbalanced: 0.2369 | KE: 3.02e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  66000 | Unbalanced: 0.2278 | KE: 3.09e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  67000 | Unbalanced: 0.2361 | KE: 3.16e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  68000 | Unbalanced: 0.2496 | KE: 3.24e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  69000 | Unbalanced: 0.2679 | KE: 3.32e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  70000 | Unbalanced: 0.2869 | KE: 3.40e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  71000 | Unbalanced: 0.2666 | KE: 3.48e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  72000 | Unbalanced: 0.2735 | KE: 3.56e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  73000 | Unbalanced: 0.2923 | KE: 3.63e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  74000 | Unbalanced: 0.2662 | KE: 3.71e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  75000 | Unbalanced: 0.2693 | KE: 3.79e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  76000 | Unbalanced: 0.2849 | KE: 3.86e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  77000 | Unbalanced: 0.2841 | KE: 3.94e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  78000 | Unbalanced: 0.2931 | KE: 4.01e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  79000 | Unbalanced: 0.2862 | KE: 4.08e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  80000 | Unbalanced: 0.2924 | KE: 4.14e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  81000 | Unbalanced: 0.3107 | KE: 4.21e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  82000 | Unbalanced: 0.3022 | KE: 4.28e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  83000 | Unbalanced: 0.3318 | KE: 4.35e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  84000 | Unbalanced: 0.3114 | KE: 4.41e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  85000 | Unbalanced: 0.3301 | KE: 4.48e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  86000 | Unbalanced: 0.3427 | KE: 4.55e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  87000 | Unbalanced: 0.3248 | KE: 4.61e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  88000 | Unbalanced: 0.3422 | KE: 4.68e+05 (targets: 0.0500, <1)
+Phase 0 (Settling): Iteration  89000 | Unbalanced: 0.3420 | KE: 4.74e+05 (targets: 0.0500, <1)
 
 ======================================================================
 PHASE 0 COMPLETE: Gravity Settling
 ======================================================================
 Iteration: 90000
-Unbalanced force: 0.362704
-Kinetic energy: 5.512136e+04
+Unbalanced force: 0.357336
+Kinetic energy: 4.801352e+05
 (Forced completion due to timeout)
 
 Particles have settled under gravity.
 
 --- Starting PHASE 1: Bond Creation + Weak Zone ---
-✓ Created 26368 cohesive bonds
+Restoring material friction (Sandstone=35°, Shale=28°)...
+✓ Friction restored.
+✓ Forces reset.
+✓ Created 5994 cohesive bonds
 ✓ Enabled bonding for new contacts (crack healing allowed)
-✓ Created FAULT NUCLEATION ZONE: 2740 bonds modified
+✓ Created FAULT NUCLEATION ZONE: 255 bonds modified
   Location: Vertical plane at x=0 (±1m width)
   Properties: 10% cohesion, 50% friction reduction
   Purpose: Seed localized shear rupture
@@ -195,20 +214,20 @@ Skipping stiffness restoration (Factor=1.0 used).
 --- Starting PHASE 2: Kinematic Hanging Wall Drive (Thrust Mechanics) ---
 Loading mode: Kinematic wall movement (no servo control)
   - Bottom footwall: FIXED (rigid basement)
-  - Hanging wall velocity: 50.0 mm/s at 60° dip
+  - Hanging wall velocity: 10.0 mm/s at 60° dip
   - Material cohesion: 6-11 MPa (weak zone: 0.6-1.1 MPa)
   - Natural stress state from gravity + rigid walls
   - Fault nucleation zone: Vertical plane at x=0
 → Hanging wall will drive thrust rupture along weak zone
 ======================================================================
 
-Phase 0 (Settling): Iteration  90000 | Unbalanced: 0.3627 | KE: 5.51e+04 (targets: 0.0100, <1)
+Phase 0 (Settling): Iteration  90000 | Unbalanced: 0.3573 | KE: 4.80e+05 (targets: 0.0500, <1)
 Phase 2 (Fault Loading): Iteration  90000 | HW disp: X=0.000m, Z=-0.100m | Broken bonds = 0 (0.0%)
 
 ======================================================================
 SIMULATION COMPLETE: Significant Fault Damage
 ======================================================================
-Bond damage: 42.3% (11153/26368)
+Bond damage: 42.2% (2531/5994)
 Hanging wall displacement: X=-0.00m, Z=-0.10m
 
 --- Data exported to simulation_results.txt ---
