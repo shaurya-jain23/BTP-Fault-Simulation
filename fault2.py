@@ -56,6 +56,29 @@ PARTICLES_PER_LAYER = 6000 # Total: 60,000 particles (increased from 400 for bet
 LAYER_BOUNDARIES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 # ============================================================================
+# BREAKABLE CLUMP PARAMETERS (Adaptive Zone Refinement)
+# ============================================================================
+# Fault Core Zone: Region where breakable clumps are used instead of spheres
+# This allows realistic fault gouge formation under stress
+
+FAULT_ZONE_X_MIN = -2.0  # Left boundary of fault core (meters)
+FAULT_ZONE_X_MAX = 2.0   # Right boundary of fault core (meters)
+
+# Clump configuration
+CLUMP_MEMBER_RATIO = 0.4  # Member sphere radius = this × parent radius
+CLUMP_BREAKAGE_FORCE = 5e4  # Force threshold for clump breakage (N)
+
+# Tracking lists for clumps
+clump_ids = []  # List of clump body IDs
+broken_clump_count = 0  # Counter for broken clumps
+
+print(f"\n--- Breakable Clump Configuration ---")
+print(f"Fault Core Zone: x ∈ [{FAULT_ZONE_X_MIN}, {FAULT_ZONE_X_MAX}] m")
+print(f"Clump member radius ratio: {CLUMP_MEMBER_RATIO}")
+print(f"Breakage force threshold: {CLUMP_BREAKAGE_FORCE/1e3:.1f} kN")
+print("-" * 70)
+
+# ============================================================================
 # SECTION 2: 10-LAYER MATERIAL PROPERTIES (Alternating Sandstone/Shale)
 # ============================================================================
 # Realistic stratigraphy: Layers 0,2,4,6,8 = Sandstone | Layers 1,3,5,7,9 = Shale
@@ -121,6 +144,65 @@ print(f"   Stiffness will be GRADUALLY restored after bonding to avoid force exp
 print("-" * 70)
 
 # ============================================================================
+# SECTION 2B: BREAKABLE CLUMP TEMPLATE FUNCTION
+# ============================================================================
+
+def create_breakable_clump(position, radius, material):
+    """
+    Create a breakable clump at the given position.
+    
+    The clump consists of a central sphere surrounded by 6 smaller spheres
+    in an octahedral arrangement. When stress exceeds the threshold,
+    the clump can be released into individual fragments.
+    
+    Parameters:
+        position: (x, y, z) tuple - center position of the clump
+        radius: float - effective radius of the clump (outer extent)
+        material: CohFrictMat - material to assign to all member spheres
+    
+    Returns:
+        clump_id: int - the body ID of the clump (for tracking)
+    """
+    global clump_ids
+    
+    # Member sphere radius (smaller than parent)
+    member_r = radius * CLUMP_MEMBER_RATIO
+    
+    # Central sphere position
+    cx, cy, cz = position
+    
+    # Offset for surrounding spheres (touch the central sphere)
+    offset = radius - member_r  # Distance from center to member centers
+    
+    # Create list of member sphere positions and radii
+    # Octahedral arrangement: 1 central + 6 surrounding (±x, ±y, ±z)
+    members = [
+        # Central sphere (slightly larger)
+        (sphere((cx, cy, cz), member_r * 1.2, material=material)),
+        # +X and -X
+        (sphere((cx + offset, cy, cz), member_r, material=material)),
+        (sphere((cx - offset, cy, cz), member_r, material=material)),
+        # +Y and -Y
+        (sphere((cx, cy + offset, cz), member_r, material=material)),
+        (sphere((cx, cy - offset, cz), member_r, material=material)),
+        # +Z and -Z
+        (sphere((cx, cy, cz + offset), member_r, material=material)),
+        (sphere((cx, cy, cz - offset), member_r, material=material)),
+    ]
+    
+    # Append as clumped body
+    clump_id, member_ids = O.bodies.appendClumped(members)
+    
+    # Store clump ID for tracking
+    clump_ids.append(clump_id)
+    
+    # Color clump members distinctly (blue-green for fault zone)
+    for mid in member_ids:
+        O.bodies[mid].shape.color = (0.2, 0.6, 0.8)
+    
+    return clump_id
+
+# ============================================================================
 # SECTION 3: STRESS STATE CALCULATION (Depth-based, realistic)
 # ============================================================================
 
@@ -174,9 +256,17 @@ for layer_idx in range(10):
           f"Z-range: [{z_bottom:.1f}, {z_top:.1f}] m | r={PARTICLE_RADIUS}m")
 
 # Insert particles into simulation with material assignment by layer
+# ADAPTIVE ZONE REFINEMENT: Use breakable clumps in fault core zone
 particle_count_by_layer = [0] * 10
+clump_count_by_layer = [0] * 10
+sphere_count_by_layer = [0] * 10
+
+print(f"\n--- Adaptive Zone Refinement ---")
+print(f"Fault Core Zone (x ∈ [{FAULT_ZONE_X_MIN}, {FAULT_ZONE_X_MAX}]): Breakable Clumps")
+print(f"Passive Rock (outside zone): Standard Spheres")
 
 for center, radius in sp:
+    x = center[0]
     z = center[2]
     
     # Determine which layer this particle belongs to
@@ -192,15 +282,35 @@ for center, radius in sp:
     
     # Assign appropriate material
     mat = materials[layer_idx]
-    O.bodies.append(sphere(center, radius, material=mat))
+    
+    # ADAPTIVE ZONE REFINEMENT LOGIC:
+    # Check if particle is in the Fault Core Zone
+    if FAULT_ZONE_X_MIN <= x <= FAULT_ZONE_X_MAX:
+        # INSIDE FAULT ZONE: Create breakable clump
+        create_breakable_clump(center, radius, mat)
+        clump_count_by_layer[layer_idx] += 1
+    else:
+        # OUTSIDE FAULT ZONE: Standard sphere (computational efficiency)
+        O.bodies.append(sphere(center, radius, material=mat))
+        sphere_count_by_layer[layer_idx] += 1
+    
     particle_count_by_layer[layer_idx] += 1
 
 total_particles = sum(particle_count_by_layer)
+total_clumps = sum(clump_count_by_layer)
+total_spheres = sum(sphere_count_by_layer)
+
 print(f"\n--- Particle Distribution Summary ---")
-for i, count in enumerate(particle_count_by_layer):
+print(f"{'Layer':<8} {'Type':<12} {'Clumps':<10} {'Spheres':<10} {'Total':<10}")
+print("-" * 50)
+for i in range(10):
     layer_type = "Sandstone" if i % 2 == 0 else "Shale"
-    print(f"Layer {i} ({layer_type}): {count} particles")
-print(f"Total particles generated: {total_particles}")
+    print(f"{i:<8} {layer_type:<12} {clump_count_by_layer[i]:<10} {sphere_count_by_layer[i]:<10} {particle_count_by_layer[i]:<10}")
+print("-" * 50)
+print(f"{'TOTAL':<8} {'':<12} {total_clumps:<10} {total_spheres:<10} {total_particles:<10}")
+print(f"\nBreakable clumps in fault zone: {total_clumps}")
+print(f"Standard spheres (passive rock): {total_spheres}")
+print(f"Clump IDs tracked: {len(clump_ids)}")
 print("-" * 70)
 
 # Calculate timestep AFTER particles with soft materials are added
@@ -349,6 +459,8 @@ O.engines = [
     PyRunner(command='checkFaultLoading()', iterPeriod=100, label='faultCheck'),
     # Drive hanging wall every iteration when Phase 2 is active
     PyRunner(command='driveHangingWall()', iterPeriod=1, label='driveHW'),
+    # Breakable clump checking (every 100 iterations during Phase 2)
+    PyRunner(command='checkBreakage()', iterPeriod=100, label='breakageCheck'),
 
     # Data collection
     PyRunner(command='saveData()', iterPeriod=2000),
@@ -392,6 +504,10 @@ total_bonds = 0
 # hanging_wall_id = None
 # Hanging wall velocity vector (set at Phase 2 start)
 hanging_wall_vel = (0.0, 0.0, 0.0)
+
+# Breakage tracking (for clumps)
+broken_clump_count = 0
+released_fragment_ids = []  # Track released fragments for visualization
 
 # ============================================================================
 # SECTION 8: PHASE 0 - GRAVITY DEPOSITION & EQUILIBRATION
@@ -695,6 +811,94 @@ def driveHangingWall():
         except Exception:
             pass
 
+# ============================================================================
+# SECTION 10B: BREAKABLE CLUMP LOGIC
+# ============================================================================
+
+def checkBreakage():
+    """
+    Check all clumps for breakage conditions and release them if threshold exceeded.
+    
+    Breakage criteria:
+    - Calculate total force on clump from all interactions
+    - If force magnitude > CLUMP_BREAKAGE_FORCE, release the clump
+    - Released fragments are colored red to visualize fault gouge/breccia
+    
+    This function is called every ~100 iterations during Phase 2.
+    """
+    global broken_clump_count, clump_ids, released_fragment_ids
+    
+    # Only check during active loading (Phase 2)
+    if not phase2_active or simulation_stopped:
+        return
+    
+    # List to track clumps that need to be removed from tracking
+    clumps_to_remove = []
+    
+    for clump_id in clump_ids:
+        try:
+            # Check if clump still exists and is a clump
+            if clump_id >= len(O.bodies) or O.bodies[clump_id] is None:
+                clumps_to_remove.append(clump_id)
+                continue
+            
+            clump_body = O.bodies[clump_id]
+            
+            # Skip if not a clump (already released or invalid)
+            if not clump_body.isClump:
+                clumps_to_remove.append(clump_id)
+                continue
+            
+            # Calculate total force on the clump
+            # Sum forces from all member spheres
+            total_force = Vector3(0, 0, 0)
+            member_ids = O.bodies[clump_id].shape.members.keys()
+            
+            for member_id in member_ids:
+                # Get force on this member
+                f = O.forces.f(member_id)
+                total_force += f
+            
+            force_magnitude = total_force.norm()
+            
+            # Check if force exceeds breakage threshold
+            if force_magnitude > CLUMP_BREAKAGE_FORCE:
+                # Get member IDs before releasing
+                member_ids_list = list(O.bodies[clump_id].shape.members.keys())
+                
+                # RELEASE THE CLUMP - members become independent bodies
+                O.bodies.releaseClump(clump_id)
+                
+                # Color released fragments RED to visualize gouge/breccia
+                for mid in member_ids_list:
+                    if mid < len(O.bodies) and O.bodies[mid] is not None:
+                        O.bodies[mid].shape.color = (0.9, 0.2, 0.1)  # Red
+                        released_fragment_ids.append(mid)
+                
+                broken_clump_count += 1
+                clumps_to_remove.append(clump_id)
+                
+                # Log significant breakage events
+                if broken_clump_count % 10 == 1:
+                    pos = clump_body.state.pos
+                    print(f"  ⚡ Clump {clump_id} broke at ({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f}) | "
+                          f"Force: {force_magnitude/1e3:.1f} kN | Total broken: {broken_clump_count}")
+        
+        except Exception as e:
+            # Clump may have been deleted or is invalid
+            clumps_to_remove.append(clump_id)
+    
+    # Remove broken/invalid clumps from tracking list
+    for cid in clumps_to_remove:
+        if cid in clump_ids:
+            clump_ids.remove(cid)
+    
+    # Periodic status update
+    if O.iter % 5000 == 0 and broken_clump_count > 0:
+        print(f"  Breakage status: {broken_clump_count} clumps broken | "
+              f"{len(released_fragment_ids)} fragments released | "
+              f"{len(clump_ids)} clumps remaining")
+
 
 def stopSimulation():
     """Clean shutdown with data export"""
@@ -742,7 +946,11 @@ def saveData():
                 # Bond tracking
                 broken_bonds=brokenBonds,
                 active_bonds=total_bonds - brokenBonds,
-                damage_ratio=brokenBonds/total_bonds if total_bonds > 0 else 0
+                damage_ratio=brokenBonds/total_bonds if total_bonds > 0 else 0,
+                # Clump breakage tracking
+                broken_clumps=broken_clump_count,
+                remaining_clumps=len(clump_ids),
+                released_fragments=len(released_fragment_ids)
             )
         except:
             pass  # Data not ready yet
@@ -758,7 +966,8 @@ def monitorBonds():
 # Plot configuration
 plot.plots = {
     'iteration': ('hw_x', 'hw_z'),  # Hanging wall position evolution
-    'iteration ': ('broken_bonds', 'active_bonds')  # Bond damage
+    'iteration ': ('broken_bonds', 'active_bonds'),  # Bond damage
+    'iteration  ': ('broken_clumps', 'remaining_clumps')  # Clump breakage
 }
 
 # ============================================================================
@@ -822,9 +1031,13 @@ print(f"Burial depth: {BURIAL_DEPTH} m")
 print(f"Layer structure: 5 Sandstone + 5 Shale (alternating)")
 print(f"Particle radius: {PARTICLE_RADIUS} m (high resolution)")
 print(f"\nPHASE WORKFLOW:")
-print(f" Phase 0: Gravity deposition (target: unbalanced force < 0.01)")
+print(f" Phase 0: Gravity deposition (target: unbalanced force < 0.05)")
 print(f" Phase 1: Bond formation + stiffness restoration (100 MPa target)")
 print(f" Phase 2: Kinematic hanging wall drive (thrust fault)")
+print(f"\nBREAKABLE CLUMPS:")
+print(f" Fault Core Zone: x ∈ [{FAULT_ZONE_X_MIN}, {FAULT_ZONE_X_MAX}] m")
+print(f" Clumps tracked: {len(clump_ids)}")
+print(f" Breakage threshold: {CLUMP_BREAKAGE_FORCE/1e3:.1f} kN")
 print("="*70 + "\n")
 
 print("Starting Phase 0: Gravity Deposition...")
@@ -832,4 +1045,3 @@ print("(Particles will settle under gravity before bonding)\n")
 O.run()
 # Simulation will run until manually stopped or termination criteria met
 # Use O.run() for batch mode or click Play in GUI for interactive mode
-
