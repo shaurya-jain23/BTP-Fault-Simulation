@@ -849,20 +849,19 @@ def checkBreakage():
                 clumps_to_remove.append(clump_id)
                 continue
             
-            # Calculate total force on the clump
-            # Sum forces from all member spheres
-            total_force = Vector3(0, 0, 0)
+            # Calculate total CRUSHING force (Scalar sum of magnitudes)
+            # NOTE: Vector sum would cancel out compression forces (+100N + -100N = 0)
+            # Scalar sum correctly captures crushing load (+100N + 100N = 200N)
+            total_force_mag = 0.0
             member_ids = O.bodies[clump_id].shape.members.keys()
             
             for member_id in member_ids:
                 # Get force on this member
                 f = O.forces.f(member_id)
-                total_force += f
-            
-            force_magnitude = total_force.norm()
+                total_force_mag += f.norm()  # Sum magnitudes (scalar), not vectors
             
             # Check if force exceeds breakage threshold
-            if force_magnitude > CLUMP_BREAKAGE_FORCE:
+            if total_force_mag > CLUMP_BREAKAGE_FORCE:
                 # Get member IDs before releasing
                 member_ids_list = list(O.bodies[clump_id].shape.members.keys())
                 
@@ -882,7 +881,7 @@ def checkBreakage():
                 if broken_clump_count % 10 == 1:
                     pos = clump_body.state.pos
                     print(f"  ⚡ Clump {clump_id} broke at ({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f}) | "
-                          f"Force: {force_magnitude/1e3:.1f} kN | Total broken: {broken_clump_count}")
+                          f"Force: {total_force_mag/1e3:.1f} kN | Total broken: {broken_clump_count}")
         
         except Exception as e:
             # Clump may have been deleted or is invalid
